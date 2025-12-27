@@ -1,3 +1,5 @@
+use std::sync::OnceLock;
+
 use crate::hangul_letter::HangulLetter;
 
 struct CharUnit {
@@ -8,6 +10,8 @@ struct CharUnit {
 pub struct Hangul {
   char_units: Vec<CharUnit>,
   original: String,
+  disassembled_cache: OnceLock<String>,
+  choseong_cache: OnceLock<String>,
 }
 
 // TODO: NFD 지원
@@ -25,6 +29,8 @@ impl Hangul {
     Self {
       char_units,
       original: string.to_string(),
+      disassembled_cache: OnceLock::new(),
+      choseong_cache: OnceLock::new(),
     }
   }
 
@@ -41,6 +47,20 @@ impl Hangul {
   }
 
   pub fn disassemble(&self) -> String {
+    self
+      .disassembled_cache
+      .get_or_init(|| self.disassemble_uncached())
+      .clone()
+  }
+
+  pub fn get_choseong(&self) -> String {
+    self
+      .choseong_cache
+      .get_or_init(|| self.choseong_uncached())
+      .clone()
+  }
+
+  fn disassemble_uncached(&self) -> String {
     if self.is_empty() {
       return String::new();
     }
@@ -49,7 +69,7 @@ impl Hangul {
 
     for unit in &self.char_units {
       match &unit.hangul {
-        Some(hangul) => result.push_str(&hangul.disassemble()),
+        Some(hangul) => hangul.append_disassembled(&mut result),
         None => result.push(unit.original),
       }
     }
@@ -57,7 +77,7 @@ impl Hangul {
     result
   }
 
-  pub fn get_choseong(&self) -> String {
+  fn choseong_uncached(&self) -> String {
     if self.is_empty() {
       return String::new();
     }

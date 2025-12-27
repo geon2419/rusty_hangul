@@ -5,8 +5,10 @@ use crate::nfc::NFC;
 use crate::nfd::NFD;
 
 pub struct HangulLetter {
-  pub value: String,
-  pub unicode: Vec<u32>,
+  value_chars: [char; 3],
+  unicode_codes: [u32; 3],
+  len: u8,
+  nfc: Option<char>,
   pub choseong: Choseong,
   pub jungseong: Jungseong,
   pub jongseong: Option<Jongseong>,
@@ -16,12 +18,18 @@ impl HangulLetter {
   pub fn parse(string: &str) -> Option<Self> {
     if NFC::is_nfc_hangul(string) {
       let ch = string.chars().next().unwrap();
-      let unicode = vec![ch as u32];
-      let NFD(cho, jung, jong) = NFD::normalize(unicode[0]).unwrap();
+      let unicode = ch as u32;
+      let NFD(cho, jung, jong) = NFD::normalize(unicode).unwrap();
+      let mut value_chars = ['\0'; 3];
+      let mut unicode_codes = [0u32; 3];
+      value_chars[0] = ch;
+      unicode_codes[0] = unicode;
 
       return Some(Self {
-        value: ch.to_string(),
-        unicode,
+        value_chars,
+        unicode_codes,
+        len: 1,
+        nfc: Some(ch),
         choseong: Choseong::new(cho),
         jungseong: Jungseong::new(jung),
         jongseong: jong.map(Jongseong::new),
@@ -29,18 +37,30 @@ impl HangulLetter {
     }
 
     if NFD::is_nfd_hangul(string) {
-      let chars: Vec<char> = string.chars().collect();
-      let choseong = Choseong::new(chars[0] as u32);
-      let jungseong = Jungseong::new(chars[1] as u32);
-      let jongseong = if chars.len() == 3 {
-        Some(Jongseong::new(chars[2] as u32))
+      let mut value_chars = ['\0'; 3];
+      let mut unicode_codes = [0u32; 3];
+      let mut len: u8 = 0;
+
+      for ch in string.chars() {
+        let index = len as usize;
+        value_chars[index] = ch;
+        unicode_codes[index] = ch as u32;
+        len += 1;
+      }
+
+      let choseong = Choseong::new(value_chars[0] as u32);
+      let jungseong = Jungseong::new(value_chars[1] as u32);
+      let jongseong = if len == 3 {
+        Some(Jongseong::new(value_chars[2] as u32))
       } else {
         None
       };
 
       return Some(Self {
-        value: string.to_string(),
-        unicode: chars.iter().map(|c| *c as u32).collect(),
+        value_chars,
+        unicode_codes,
+        len,
+        nfc: None,
         choseong,
         jungseong,
         jongseong,
@@ -54,10 +74,16 @@ impl HangulLetter {
     if NFC::is_nfc_hangul_char(nfc_char) {
       let unicode = nfc_char as u32;
       let NFD(cho, jung, jong) = NFD::normalize(unicode).unwrap();
+      let mut value_chars = ['\0'; 3];
+      let mut unicode_codes = [0u32; 3];
+      value_chars[0] = nfc_char;
+      unicode_codes[0] = unicode;
 
       return Some(Self {
-        value: nfc_char.to_string(),
-        unicode: vec![unicode],
+        value_chars,
+        unicode_codes,
+        len: 1,
+        nfc: Some(nfc_char),
         choseong: Choseong::new(cho),
         jungseong: Jungseong::new(jung),
         jongseong: jong.map(Jongseong::new),
@@ -66,21 +92,35 @@ impl HangulLetter {
     None
   }
 
+  pub fn value_chars(&self) -> &[char] {
+    &self.value_chars[..self.len as usize]
+  }
+
+  pub fn unicode_codes(&self) -> &[u32] {
+    &self.unicode_codes[..self.len as usize]
+  }
+
+  pub fn value_nfc(&self) -> Option<char> {
+    self.nfc
+  }
+
+  pub fn value_string(&self) -> String {
+    self.value_chars().iter().collect()
+  }
+
+  pub fn append_disassembled(&self, output: &mut String) {
+    output.push(self.choseong.compatibility_value);
+    output.push(self.jungseong.compatibility_value);
+
+    if let Some(ref jong) = self.jongseong {
+      jong.append_disassembled(output);
+    }
+  }
+
   pub fn disassemble(&self) -> String {
     let mut result = String::with_capacity(4);
 
-    result.push(self.choseong.compatibility_value);
-    result.push(self.jungseong.compatibility_value);
-
-    if let Some(ref jong) = self.jongseong {
-      if jong.is_complex_jongseong() {
-        for c in jong.decompose_complex_jongseong() {
-          result.push(c);
-        }
-      } else {
-        result.push(jong.compatibility_value);
-      }
-    }
+    self.append_disassembled(&mut result);
 
     result
   }
@@ -97,33 +137,33 @@ mod tests {
   #[test]
   fn test_parse_nfc_hangul() {
     let hangul = HangulLetter::parse("가").unwrap();
-    assert_eq!(hangul.value, "가");
-    assert_eq!(hangul.unicode, vec![0xAC00]);
+    assert_eq!(hangul.value_string(), "가");
+    assert_eq!(hangul.unicode_codes(), &[0xAC00]);
     assert_eq!(hangul.choseong.compatibility_value, 'ㄱ');
     assert_eq!(hangul.jungseong.compatibility_value, 'ㅏ');
     assert!(hangul.jongseong.is_none());
 
     let hangul = HangulLetter::parse("한").unwrap();
-    assert_eq!(hangul.value, "한");
-    assert_eq!(hangul.unicode, vec![0xD55C]);
+    assert_eq!(hangul.value_string(), "한");
+    assert_eq!(hangul.unicode_codes(), &[0xD55C]);
     assert_eq!(hangul.choseong.compatibility_value, 'ㅎ');
     assert_eq!(hangul.jungseong.compatibility_value, 'ㅏ');
     assert_eq!(hangul.jongseong.unwrap().compatibility_value, 'ㄴ');
 
     let hangul = HangulLetter::parse("쌍").unwrap();
-    assert_eq!(hangul.value, "쌍");
+    assert_eq!(hangul.value_string(), "쌍");
     assert_eq!(hangul.choseong.compatibility_value, 'ㅆ');
     assert_eq!(hangul.jungseong.compatibility_value, 'ㅏ');
     assert_eq!(hangul.jongseong.unwrap().compatibility_value, 'ㅇ');
 
     let hangul = HangulLetter::parse("귀").unwrap();
-    assert_eq!(hangul.value, "귀");
+    assert_eq!(hangul.value_string(), "귀");
     assert_eq!(hangul.choseong.compatibility_value, 'ㄱ');
     assert_eq!(hangul.jungseong.compatibility_value, 'ㅟ');
     assert!(hangul.jongseong.is_none());
 
     let hangul = HangulLetter::parse("값").unwrap();
-    assert_eq!(hangul.value, "값");
+    assert_eq!(hangul.value_string(), "값");
     assert_eq!(hangul.choseong.compatibility_value, 'ㄱ');
     assert_eq!(hangul.jungseong.compatibility_value, 'ㅏ');
     assert_eq!(hangul.jongseong.unwrap().compatibility_value, 'ㅄ');
@@ -133,16 +173,16 @@ mod tests {
   fn test_parse_nfd_hangul() {
     let nfd_ga = "\u{1100}\u{1161}";
     let hangul = HangulLetter::parse(nfd_ga).unwrap();
-    assert_eq!(hangul.value, nfd_ga);
-    assert_eq!(hangul.unicode, vec![0x1100, 0x1161]);
+    assert_eq!(hangul.value_string(), nfd_ga);
+    assert_eq!(hangul.unicode_codes(), &[0x1100, 0x1161]);
     assert_eq!(hangul.choseong.compatibility_value, 'ㄱ');
     assert_eq!(hangul.jungseong.compatibility_value, 'ㅏ');
     assert!(hangul.jongseong.is_none());
 
     let nfd_han = "\u{1112}\u{1161}\u{11AB}";
     let hangul = HangulLetter::parse(nfd_han).unwrap();
-    assert_eq!(hangul.value, nfd_han);
-    assert_eq!(hangul.unicode, vec![0x1112, 0x1161, 0x11AB]);
+    assert_eq!(hangul.value_string(), nfd_han);
+    assert_eq!(hangul.unicode_codes(), &[0x1112, 0x1161, 0x11AB]);
     assert_eq!(hangul.choseong.compatibility_value, 'ㅎ');
     assert_eq!(hangul.jungseong.compatibility_value, 'ㅏ');
     assert_eq!(hangul.jongseong.unwrap().compatibility_value, 'ㄴ');
@@ -151,8 +191,8 @@ mod tests {
   #[test]
   fn test_parse_from_char() {
     let hangul = HangulLetter::parse_from_char('한').unwrap();
-    assert_eq!(hangul.value, "한");
-    assert_eq!(hangul.unicode, vec![0xD55C]);
+    assert_eq!(hangul.value_string(), "한");
+    assert_eq!(hangul.unicode_codes(), &[0xD55C]);
 
     assert!(HangulLetter::parse_from_char('a').is_none());
     assert!(HangulLetter::parse_from_char('ㄱ').is_none());
