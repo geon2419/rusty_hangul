@@ -215,6 +215,46 @@ mod tests {
   }
 
   #[test]
+  fn test_value_nfc_and_lengths() {
+    let nfc = HangulLetter::parse("가").unwrap();
+    assert_eq!(nfc.value_nfc(), Some('가'));
+    assert_eq!(nfc.value_chars().len(), 1);
+    assert_eq!(nfc.unicode_codes().len(), 1);
+
+    let nfd = "\u{1100}\u{1161}";
+    let hangul = HangulLetter::parse(nfd).unwrap();
+    assert_eq!(hangul.value_nfc(), None);
+    assert_eq!(hangul.value_chars().len(), 2);
+    assert_eq!(hangul.unicode_codes().len(), 2);
+
+    let nfd_with_jong = "\u{1100}\u{1161}\u{11BC}";
+    let hangul = HangulLetter::parse(nfd_with_jong).unwrap();
+    assert_eq!(hangul.value_nfc(), None);
+    assert_eq!(hangul.value_chars().len(), 3);
+    assert_eq!(hangul.unicode_codes().len(), 3);
+  }
+
+  #[test]
+  fn test_append_disassembled() {
+    let mut output = String::from("X");
+    let hangul = HangulLetter::parse("가").unwrap();
+    hangul.append_disassembled(&mut output);
+    assert_eq!(output, "Xㄱㅏ");
+
+    let mut output = String::from("Y");
+    let hangul = HangulLetter::parse("값").unwrap();
+    hangul.append_disassembled(&mut output);
+    assert_eq!(output, "Yㄱㅏㅂㅅ");
+  }
+
+  #[test]
+  fn test_parse_from_char_with_batchim() {
+    let hangul = HangulLetter::parse_from_char('값').unwrap();
+    assert_eq!(hangul.value_string(), "값");
+    assert!(hangul.jongseong.is_some());
+  }
+
+  #[test]
   fn test_has_batchim() {
     assert!(HangulLetter::parse("한").unwrap().has_batchim());
     assert!(HangulLetter::parse("값").unwrap().has_batchim());

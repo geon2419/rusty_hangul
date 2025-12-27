@@ -162,4 +162,94 @@ mod tests {
     let empty = Hangul::new("");
     assert_eq!(empty.get_choseong(), "");
   }
+
+  #[test]
+  fn test_empty_repeated_calls() {
+    let empty = Hangul::new("");
+    assert_eq!(empty.disassemble(), "");
+    assert_eq!(empty.get_choseong(), "");
+    assert_eq!(empty.disassemble(), "");
+    assert_eq!(empty.get_choseong(), "");
+  }
+
+  #[test]
+  fn test_non_hangul_only() {
+    let text = "ABC123!@";
+    let sentence = Hangul::new(text);
+    assert_eq!(sentence.disassemble(), text);
+    assert_eq!(sentence.get_choseong(), text);
+  }
+
+  #[test]
+  fn test_mixed_boundaries() {
+    let middle = Hangul::new("가A나!");
+    assert_eq!(middle.disassemble(), "ㄱㅏAㄴㅏ!");
+    assert_eq!(middle.get_choseong(), "ㄱAㄴ!");
+
+    let prefix = Hangul::new("A가");
+    assert_eq!(prefix.disassemble(), "Aㄱㅏ");
+    assert_eq!(prefix.get_choseong(), "Aㄱ");
+
+    let suffix = Hangul::new("가A");
+    assert_eq!(suffix.disassemble(), "ㄱㅏA");
+    assert_eq!(suffix.get_choseong(), "ㄱA");
+  }
+
+  #[test]
+  fn test_whitespace_preserved() {
+    let sentence = Hangul::new("안녕\n하세요\t");
+    assert_eq!(sentence.disassemble(), "ㅇㅏㄴㄴㅕㅇ\nㅎㅏㅅㅔㅇㅛ\t");
+    assert_eq!(sentence.get_choseong(), "ㅇㄴ\nㅎㅅㅇ\t");
+  }
+
+  #[test]
+  fn test_nfd_input_passthrough() {
+    let nfd = "\u{1100}\u{1161}\u{11AB}";
+    let sentence = Hangul::new(nfd);
+    assert_eq!(sentence.disassemble(), nfd);
+    assert_eq!(sentence.get_choseong(), nfd);
+  }
+
+  #[test]
+  fn test_single_char_inputs() {
+    let hangul = Hangul::new("가");
+    assert_eq!(hangul.disassemble(), "ㄱㅏ");
+    assert_eq!(hangul.get_choseong(), "ㄱ");
+
+    let jamo = Hangul::new("ㄱ");
+    assert_eq!(jamo.disassemble(), "ㄱ");
+    assert_eq!(jamo.get_choseong(), "ㄱ");
+
+    let vowel = Hangul::new("ㅏ");
+    assert_eq!(vowel.disassemble(), "ㅏ");
+    assert_eq!(vowel.get_choseong(), "ㅏ");
+  }
+
+  #[test]
+  fn test_emoji_mixed() {
+    let sentence = Hangul::new("가🙂나");
+    assert_eq!(sentence.disassemble(), "ㄱㅏ🙂ㄴㅏ");
+    assert_eq!(sentence.get_choseong(), "ㄱ🙂ㄴ");
+  }
+
+  #[test]
+  fn test_long_string_smoke() {
+    let text = "가나다라마바사아자차카타파하";
+    let long = text.repeat(1000);
+    let sentence = Hangul::new(&long);
+    assert_eq!(sentence.len(), long.chars().count());
+    assert_eq!(sentence.disassemble().chars().count(), long.chars().count() * 2);
+  }
+
+  #[test]
+  fn test_cache_reuse_same_instance() {
+    let sentence = Hangul::new("안녕 Hello");
+    let first = sentence.disassemble();
+    let second = sentence.disassemble();
+    assert_eq!(first, second);
+
+    let first = sentence.get_choseong();
+    let second = sentence.get_choseong();
+    assert_eq!(first, second);
+  }
 }
