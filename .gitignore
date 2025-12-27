@@ -1,15 +1,15 @@
 # Rust/Cargo
-# 컴파일된 파일 및 실행 파일
+# Compiled files and executables
 target/
 debug/
 *.pdb
 **/*.rs.bk
-# Cargo.lock을 라이브러리에서는 무시하고 실행 파일에서는 유지
+# Ignore Cargo.lock for libraries, keep it for binaries
 # https://doc.rust-lang.org/cargo/guide/cargo-toml-vs-cargo-lock.html
 Cargo.lock
 
 # Node.js
-# 로그 파일
+# Log files
 logs
 *.log
 npm-debug.log*
@@ -22,28 +22,28 @@ lerna-debug.log*
 .pnpm-store/
 .pnpm-cache/
 
-# 진단 보고서
+# Diagnostic reports
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
-# 런타임 데이터
+# Runtime data
 pids
 *.pid
 *.seed
 *.pid.lock
 
-# 테스트 커버리지 관련
+# Test coverage
 lib-cov
 coverage
 *.lcov
 .nyc_output
 
-# 빌드 도구 관련
+# Build tools
 .grunt
 bower_components
 .lock-wscript
 build/Release
 
-# 의존성 디렉토리
+# Dependency directories
 node_modules/
 jspm_packages/
 web_modules/
@@ -52,7 +52,7 @@ web_modules/
 typings/
 *.tsbuildinfo
 
-# 캐시 및 임시 파일
+# Cache and temporary files
 .npm
 .eslintcache
 .stylelintcache
@@ -72,10 +72,10 @@ typings/
 .pnp.*
 .webpack/
 
-# 패키징 결과물
+# Package artifacts
 *.tgz
 
-# 환경 변수 파일
+# Environment variable files
 .env
 .env.development.local
 .env.test.local
@@ -83,7 +83,7 @@ typings/
 .env.local
 .env.test
 
-# 프레임워크 빌드 결과물
+# Framework build outputs
 .next
 out
 .nuxt
@@ -92,31 +92,31 @@ dist-ssr
 .svelte-kit
 .vuepress/dist
 
-# 서버리스 디렉토리
+# Serverless directories
 .serverless/
 .fusebox/
 .dynamodb/
 .tern-port
 
-# 벤치마크 결과
+# Benchmark results
 benchmark/results/
 
-# Node 네이티브 바인딩 생성 파일
+# Node native binding output
 hangul.*.node
 
-# WASI 관련 파일
+# WASI-related files
 *.wasi.cjs
 *.wasi-browser.js
 wasi-worker*.mjs
 
-# 특정 예제 배포 파일
+# Specific example build outputs
 examples/**/dist/
 examples/**/.vite/
 
-# justfile 로그 및 임시 파일
+# justfile logs and temp files
 .just/
 
-# 기존 .wasm 무시 규칙을 더 구체적으로 수정 (pkg 폴더 외의 wasm 파일만 무시)
+# Refine wasm ignore rule (ignore wasm files outside the pkg folder)
 !wasm/pkg/*.wasm
 
 # VS Code
@@ -124,7 +124,7 @@ examples/**/.vite/
 .vscode-test
 !.vscode/extensions.json
 
-# GitHub 관련
+# GitHub related
 .github/prompts
 
 # macOS
@@ -171,7 +171,7 @@ wasm/pkg
 # Node native modules
 *.node
 
-# 특정 에디터 파일
+# Editor-specific files
 .idea
 *.suo
 *.ntvs*
@@ -180,6 +180,21 @@ wasm/pkg
 *.sw?
 *.local
 
-# 기타
+# Misc
 AI.md
 npm
+
+# Sensitive files/credentials (preventive)
+*.pem
+*.key
+*.p12
+.npmrc
+.cargo/credentials
+.aws/
+.ssh/
+
+# AI related
+AI.md
+prompts/**/*.md
+AGENTS.md
+CLAUDE.md
