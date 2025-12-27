@@ -1,6 +1,5 @@
 {
 	"name": "wasm",
-	"version": "0.0.0",
 	"description": "WebAssembly bindings for hangul library",
 	"main": "pkg/hangul.js",
 	"types": "pkg/hangul.d.ts",

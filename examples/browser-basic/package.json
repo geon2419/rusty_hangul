@@ -6,16 +6,15 @@
 		"dev": "vite"
 	},
 	"dependencies": {
-		"react": "catalog:",
-		"react-dom": "catalog:"
+		"react": "^19.1.0",
+		"react-dom": "^19.1.0"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "catalog:",
-		"@types/react": "catalog:",
-		"@types/react-dom": "catalog:",
-		"@vitejs/plugin-react": "catalog:",
-		"typescript": "catalog:",
-		"vite": "catalog:",
+		"@types/react": "^19.1.0",
+		"@types/react-dom": "^19.1.2",
+		"@vitejs/plugin-react": "^4.3.4",
+		"typescript": "^5.8.3",
+		"vite": "^6.2.6",
 		"vite-plugin-top-level-await": "^1.5.0",
 		"vite-plugin-wasm": "^3.4.1"
 	}

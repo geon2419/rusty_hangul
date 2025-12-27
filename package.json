@@ -2,11 +2,11 @@
 	"name": "rusty_hangul",
 	"version": "0.0.0",
 	"private": true,
+	"workspaces": ["examples/*", "node", "wasm", "benchmark"],
 	"scripts": {
-		"node:test": "pnpm --filter node test",
-		"node:build": "pnpm --filter node build",
-		"wasm:test": "pnpm --filter wasm test",
-		"wasm:build": "pnpm --filter wasm build"
+		"node:build": "bun --filter node build",
+		"wasm:build": "bun --filter wasm build",
+		"bench": "bun --filter benchmark bench"
 	},
-	"packageManager": "pnpm@10.8.0"
+	"packageManager": "bun@1.3.3"
 }
