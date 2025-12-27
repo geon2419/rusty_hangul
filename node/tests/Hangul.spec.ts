@@ -38,6 +38,31 @@ describe("Hangul class", () => {
 				"ㅇㅏㄴㄴㅕㅇ ㅎㅏㅅㅔㅇㅛ",
 			);
 		});
+
+		// 공백/개행/탭이 포함된 문자열을 올바르게 처리하는지 테스트
+		it("should preserve whitespace characters", () => {
+			expect(new Hangul("안녕\n하세요\t").disassemble()).toBe(
+				"ㅇㅏㄴㄴㅕㅇ\nㅎㅏㅅㅔㅇㅛ\t",
+			);
+		});
+
+		// 비한글만 포함된 문자열을 그대로 유지하는지 테스트
+		it("should return the same string when input is non-Hangul only", () => {
+			expect(new Hangul("ABC123!@").disassemble()).toBe("ABC123!@");
+		});
+
+		// 한글과 비한글이 섞인 경계 위치를 올바르게 처리하는지 테스트
+		it("should handle mixed boundaries correctly", () => {
+			expect(new Hangul("가A나!").disassemble()).toBe("ㄱㅏAㄴㅏ!");
+			expect(new Hangul("A가").disassemble()).toBe("Aㄱㅏ");
+			expect(new Hangul("가A").disassemble()).toBe("ㄱㅏA");
+		});
+
+		// NFD 입력을 그대로 유지하는지 테스트
+		it("should pass through NFD input", () => {
+			const nfd = "\u1100\u1161\u11AB";
+			expect(new Hangul(nfd).disassemble()).toBe(nfd);
+		});
 	});
 
 	describe("getChoseong method", () => {
@@ -69,6 +94,36 @@ describe("Hangul class", () => {
 		// 공백이 있는 문자열을 올바르게 처리하는지 테스트
 		it("should handle strings with spaces correctly", () => {
 			expect(new Hangul("안녕 하세요").getChoseong()).toBe("ㅇㄴ ㅎㅅㅇ");
+		});
+
+		// 공백/개행/탭이 포함된 문자열을 올바르게 처리하는지 테스트
+		it("should preserve whitespace characters", () => {
+			expect(new Hangul("안녕\n하세요\t").getChoseong()).toBe("ㅇㄴ\nㅎㅅㅇ\t");
+		});
+
+		// 비한글만 포함된 문자열을 그대로 유지하는지 테스트
+		it("should return the same string when input is non-Hangul only", () => {
+			expect(new Hangul("ABC123!@").getChoseong()).toBe("ABC123!@");
+		});
+
+		// 한글과 비한글이 섞인 경계 위치를 올바르게 처리하는지 테스트
+		it("should handle mixed boundaries correctly", () => {
+			expect(new Hangul("가A나!").getChoseong()).toBe("ㄱAㄴ!");
+			expect(new Hangul("A가").getChoseong()).toBe("Aㄱ");
+			expect(new Hangul("가A").getChoseong()).toBe("ㄱA");
+		});
+
+		// NFD 입력을 그대로 유지하는지 테스트
+		it("should pass through NFD input", () => {
+			const nfd = "\u1100\u1161\u11AB";
+			expect(new Hangul(nfd).getChoseong()).toBe(nfd);
+		});
+
+		// 동일 인스턴스에서 반복 호출 시 결과가 동일한지 테스트
+		it("should return the same result on repeated calls", () => {
+			const hangul = new Hangul("안녕 Hello");
+			expect(hangul.getChoseong()).toBe("ㅇㄴ Hello");
+			expect(hangul.getChoseong()).toBe("ㅇㄴ Hello");
 		});
 	});
 });
