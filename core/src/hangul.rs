@@ -99,6 +99,62 @@ impl Hangul {
 mod tests {
   use super::*;
 
+  const S_BASE: u32 = 0xAC00;
+  const S_LAST: u32 = 0xD7A3;
+  const N_COUNT: u32 = 21 * 28;
+  const T_COUNT: u32 = 28;
+
+  const CHOSEONG: [char; 19] = [
+    'ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ',
+    'ㅌ', 'ㅍ', 'ㅎ',
+  ];
+
+  const JUNGSEONG: [char; 21] = [
+    'ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅗ', 'ㅘ', 'ㅙ', 'ㅚ', 'ㅛ', 'ㅜ', 'ㅝ', 'ㅞ',
+    'ㅟ', 'ㅠ', 'ㅡ', 'ㅢ', 'ㅣ',
+  ];
+
+  const JONGSEONG: [&str; 28] = [
+    "", "ㄱ", "ㄲ", "ㄱㅅ", "ㄴ", "ㄴㅈ", "ㄴㅎ", "ㄷ", "ㄹ", "ㄹㄱ", "ㄹㅁ", "ㄹㅂ", "ㄹㅅ",
+    "ㄹㅌ", "ㄹㅍ", "ㄹㅎ", "ㅁ", "ㅂ", "ㅂㅅ", "ㅅ", "ㅆ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ",
+    "ㅎ",
+  ];
+
+  fn modern_hangul_indices(code: u32) -> (usize, usize, usize) {
+    let index = code - S_BASE;
+
+    (
+      (index / N_COUNT) as usize,
+      ((index % N_COUNT) / T_COUNT) as usize,
+      (index % T_COUNT) as usize,
+    )
+  }
+
+  fn modern_hangul_from_indices(
+    choseong_index: usize,
+    jungseong_index: usize,
+    jongseong_index: usize,
+  ) -> char {
+    let code = S_BASE
+      + choseong_index as u32 * N_COUNT
+      + jungseong_index as u32 * T_COUNT
+      + jongseong_index as u32;
+
+    char::from_u32(code).unwrap()
+  }
+
+  fn expected_disassembly(
+    choseong_index: usize,
+    jungseong_index: usize,
+    jongseong_index: usize,
+  ) -> String {
+    let mut expected = String::new();
+    expected.push(CHOSEONG[choseong_index]);
+    expected.push(JUNGSEONG[jungseong_index]);
+    expected.push_str(JONGSEONG[jongseong_index]);
+    expected
+  }
+
   #[test]
   fn test_create_hangul() {
     let sentence = Hangul::new("안녕하세요");
@@ -149,6 +205,108 @@ mod tests {
 
     let special = Hangul::new("안녕!");
     assert_eq!(special.disassemble(), "ㅇㅏㄴㄴㅕㅇ!");
+  }
+
+  #[test]
+  fn test_disassemble_all_modern_hangul_syllables() {
+    for code in S_BASE..=S_LAST {
+      let ch = char::from_u32(code).unwrap();
+      let (choseong_index, jungseong_index, jongseong_index) = modern_hangul_indices(code);
+
+      assert_eq!(
+        Hangul::new(&ch.to_string()).disassemble(),
+        expected_disassembly(choseong_index, jungseong_index, jongseong_index),
+        "failed to disassemble U+{code:04X} ({ch})"
+      );
+    }
+  }
+
+  #[test]
+  fn test_disassemble_edge_combinations_of_jamo_indices() {
+    let choseong_edges = [0usize, 1, 17, 18];
+    let jungseong_edges = [0usize, 1, 19, 20];
+    let jongseong_edges = [0usize, 1, 26, 27];
+
+    for choseong_index in choseong_edges {
+      for jungseong_index in jungseong_edges {
+        for jongseong_index in jongseong_edges {
+          let ch = modern_hangul_from_indices(choseong_index, jungseong_index, jongseong_index);
+          let code = ch as u32;
+
+          assert_eq!(
+            Hangul::new(&ch.to_string()).disassemble(),
+            expected_disassembly(choseong_index, jungseong_index, jongseong_index),
+            "failed at choseong_index={choseong_index}, jungseong_index={jungseong_index}, jongseong_index={jongseong_index}, U+{code:04X} ({ch})"
+          );
+        }
+      }
+    }
+  }
+
+  #[test]
+  fn test_disassemble_all_compound_jungseong() {
+    let cases = [
+      (9usize, "ㄱㅘ"),
+      (10, "ㄱㅙ"),
+      (11, "ㄱㅚ"),
+      (14, "ㄱㅝ"),
+      (15, "ㄱㅞ"),
+      (16, "ㄱㅟ"),
+      (19, "ㄱㅢ"),
+    ];
+
+    for (jungseong_index, expected) in cases {
+      let ch = modern_hangul_from_indices(0, jungseong_index, 0);
+
+      assert_eq!(
+        Hangul::new(&ch.to_string()).disassemble(),
+        expected,
+        "failed to disassemble compound jungseong index={jungseong_index}, char={ch}"
+      );
+    }
+  }
+
+  #[test]
+  fn test_disassemble_all_compound_jongseong() {
+    let cases = [
+      (3usize, "ㄱㅏㄱㅅ"),
+      (5, "ㄱㅏㄴㅈ"),
+      (6, "ㄱㅏㄴㅎ"),
+      (9, "ㄱㅏㄹㄱ"),
+      (10, "ㄱㅏㄹㅁ"),
+      (11, "ㄱㅏㄹㅂ"),
+      (12, "ㄱㅏㄹㅅ"),
+      (13, "ㄱㅏㄹㅌ"),
+      (14, "ㄱㅏㄹㅍ"),
+      (15, "ㄱㅏㄹㅎ"),
+      (18, "ㄱㅏㅂㅅ"),
+    ];
+
+    for (jongseong_index, expected) in cases {
+      let ch = modern_hangul_from_indices(0, 0, jongseong_index);
+
+      assert_eq!(
+        Hangul::new(&ch.to_string()).disassemble(),
+        expected,
+        "failed to disassemble compound jongseong index={jongseong_index}, char={ch}"
+      );
+    }
+  }
+
+  #[test]
+  fn test_disassemble_compound_jungseong_with_compound_jongseong() {
+    let ch = modern_hangul_from_indices(0, 9, 18);
+
+    assert_eq!(Hangul::new(&ch.to_string()).disassemble(), "ㄱㅘㅂㅅ");
+  }
+
+  #[test]
+  fn test_disassemble_modern_hangul_boundaries() {
+    assert_eq!(Hangul::new("가").disassemble(), "ㄱㅏ");
+    assert_eq!(Hangul::new("힣").disassemble(), "ㅎㅣㅎ");
+
+    assert_eq!(Hangul::new("\u{ABFF}").disassemble(), "\u{ABFF}");
+    assert_eq!(Hangul::new("\u{D7A4}").disassemble(), "\u{D7A4}");
   }
 
   #[test]
@@ -238,7 +396,10 @@ mod tests {
     let long = text.repeat(1000);
     let sentence = Hangul::new(&long);
     assert_eq!(sentence.len(), long.chars().count());
-    assert_eq!(sentence.disassemble().chars().count(), long.chars().count() * 2);
+    assert_eq!(
+      sentence.disassemble().chars().count(),
+      long.chars().count() * 2
+    );
   }
 
   #[test]
