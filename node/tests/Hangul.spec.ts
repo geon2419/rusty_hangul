@@ -58,10 +58,31 @@ describe("Hangul class", () => {
 			expect(new Hangul("가A").disassemble()).toBe("ㄱㅏA");
 		});
 
-		// NFD 입력을 그대로 유지하는지 테스트
-		it("should pass through NFD input", () => {
+		// NFD 입력을 음절 단위로 분해하는지 테스트
+		it("should disassemble NFD input", () => {
 			const nfd = "\u1100\u1161\u11AB";
-			expect(new Hangul(nfd).disassemble()).toBe(nfd);
+			expect(new Hangul(nfd).disassemble()).toBe("ㄱㅏㄴ");
+		});
+
+		// 연속 NFD 음절을 올바르게 분해하는지 테스트
+		it("should disassemble consecutive NFD syllables", () => {
+			const annyeong = "\u110B\u1161\u11AB\u1102\u1167\u11BC";
+			expect(new Hangul(annyeong).disassemble()).toBe("ㅇㅏㄴㄴㅕㅇ");
+		});
+
+		// NFC와 NFD 입력이 같은 분해 결과를 내는지 테스트
+		it("should match NFC disassemble results for NFD input", () => {
+			expect(new Hangul("\u1100\u116A").disassemble()).toBe(
+				new Hangul("과").disassemble(),
+			);
+			expect(new Hangul("\u1100\u1161\u11B9").disassemble()).toBe(
+				new Hangul("값").disassemble(),
+			);
+		});
+
+		// 단독 조합형 초성 다음에 NFC 음절이 오면 초성은 유지하는지 테스트
+		it("should pass through lone choseong before an NFC syllable", () => {
+			expect(new Hangul("\u1100가").disassemble()).toBe("\u1100ㄱㅏ");
 		});
 	});
 
@@ -113,10 +134,26 @@ describe("Hangul class", () => {
 			expect(new Hangul("가A").getChoseong()).toBe("ㄱA");
 		});
 
-		// NFD 입력을 그대로 유지하는지 테스트
-		it("should pass through NFD input", () => {
+		// NFD 입력에서 초성을 추출하는지 테스트
+		it("should extract choseong from NFD input", () => {
 			const nfd = "\u1100\u1161\u11AB";
-			expect(new Hangul(nfd).getChoseong()).toBe(nfd);
+			expect(new Hangul(nfd).getChoseong()).toBe("ㄱ");
+		});
+
+		// 연속 NFD 음절에서 초성을 추출하는지 테스트
+		it("should extract choseong from consecutive NFD syllables", () => {
+			const annyeong = "\u110B\u1161\u11AB\u1102\u1167\u11BC";
+			expect(new Hangul(annyeong).getChoseong()).toBe("ㅇㄴ");
+		});
+
+		// NFC와 NFD 입력이 같은 초성 결과를 내는지 테스트
+		it("should match NFC choseong results for NFD input", () => {
+			expect(new Hangul("\u1100\u116A").getChoseong()).toBe(
+				new Hangul("과").getChoseong(),
+			);
+			expect(new Hangul("\u1100\u1161\u11B9").getChoseong()).toBe(
+				new Hangul("값").getChoseong(),
+			);
 		});
 
 		// 동일 인스턴스에서 반복 호출 시 결과가 동일한지 테스트

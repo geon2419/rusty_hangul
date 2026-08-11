@@ -26,9 +26,11 @@ assert_eq!(text.get_choseong(), "ㅇㄴㅎㅅㅇ");
 // 한글이 아닌 문자도 처리 가능
 let mixed = Hangul::new("Hello 안녕!");
 assert_eq!(mixed.get_choseong(), "Hello ㅇㄴ!");
-```
 
-> 현재는 NFC로된 한글 문자열만 정상적으로 받을 수 있습니다.
+// NFC / NFD 모두 처리 가능
+let nfd = Hangul::new("\u{1100}\u{1161}\u{11AB}"); // 간
+assert_eq!(nfd.disassemble(), "ㄱㅏㄴ");
+```
 
 ## Node.js 사용 예시
 
