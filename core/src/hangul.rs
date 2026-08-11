@@ -443,6 +443,72 @@ mod tests {
   }
 
   #[test]
+  fn test_consecutive_nfd_syllables() {
+    // 안녕 in NFD: 안=안, 녕=녕
+    let annyeong = "\u{110B}\u{1161}\u{11AB}\u{1102}\u{1167}\u{11BC}";
+    let sentence = Hangul::new(annyeong);
+    assert_eq!(sentence.len(), 2);
+    assert_eq!(sentence.disassemble(), "ㅇㅏㄴㄴㅕㅇ");
+    assert_eq!(sentence.get_choseong(), "ㅇㄴ");
+
+    // 가가 in NFD (no batchim between syllables)
+    let gaga = "\u{1100}\u{1161}\u{1100}\u{1161}";
+    let sentence = Hangul::new(gaga);
+    assert_eq!(sentence.len(), 2);
+    assert_eq!(sentence.disassemble(), "ㄱㅏㄱㅏ");
+    assert_eq!(sentence.get_choseong(), "ㄱㄱ");
+  }
+
+  #[test]
+  fn test_nfd_matches_nfc_results() {
+    let pairs = [
+      ("간", "\u{1100}\u{1161}\u{11AB}"),
+      ("가", "\u{1100}\u{1161}"),
+      ("과", "\u{1100}\u{116A}"),
+      ("값", "\u{1100}\u{1161}\u{11B9}"),
+      ("안녕", "\u{110B}\u{1161}\u{11AB}\u{1102}\u{1167}\u{11BC}"),
+    ];
+
+    for (nfc, nfd) in pairs {
+      let from_nfc = Hangul::new(nfc);
+      let from_nfd = Hangul::new(nfd);
+
+      assert_eq!(from_nfc.len(), from_nfd.len(), "len mismatch for {nfc}");
+      assert_eq!(
+        from_nfc.disassemble(),
+        from_nfd.disassemble(),
+        "disassemble mismatch for {nfc}"
+      );
+      assert_eq!(
+        from_nfc.get_choseong(),
+        from_nfd.get_choseong(),
+        "choseong mismatch for {nfc}"
+      );
+    }
+  }
+
+  #[test]
+  fn test_nfd_compound_jamo() {
+    let gwa = Hangul::new("\u{1100}\u{116A}");
+    assert_eq!(gwa.len(), 1);
+    assert_eq!(gwa.disassemble(), "ㄱㅘ");
+    assert_eq!(gwa.get_choseong(), "ㄱ");
+
+    let gaps = Hangul::new("\u{1100}\u{1161}\u{11B9}");
+    assert_eq!(gaps.len(), 1);
+    assert_eq!(gaps.disassemble(), "ㄱㅏㅂㅅ");
+    assert_eq!(gaps.get_choseong(), "ㄱ");
+  }
+
+  #[test]
+  fn test_choseong_followed_by_nfc_syllable() {
+    let mixed = Hangul::new("\u{1100}가");
+    assert_eq!(mixed.len(), 2);
+    assert_eq!(mixed.disassemble(), "\u{1100}ㄱㅏ");
+    assert_eq!(mixed.get_choseong(), "\u{1100}ㄱ");
+  }
+
+  #[test]
   fn test_single_char_inputs() {
     let hangul = Hangul::new("가");
     assert_eq!(hangul.disassemble(), "ㄱㅏ");
