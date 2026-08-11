@@ -1,6 +1,9 @@
 use std::sync::OnceLock;
 
+use crate::choseong::Choseong;
 use crate::hangul_letter::HangulLetter;
+use crate::jongseong::Jongseong;
+use crate::jungseong::Jungseong;
 
 struct CharUnit {
   original: char,
@@ -14,24 +17,63 @@ pub struct Hangul {
   choseong_cache: OnceLock<String>,
 }
 
-// TODO: NFD 지원
 impl Hangul {
   pub fn new(string: &str) -> Self {
-    let mut char_units = Vec::with_capacity(string.chars().count());
-
-    for ch in string.chars() {
-      char_units.push(CharUnit {
-        original: ch,
-        hangul: HangulLetter::parse_from_char(ch),
-      });
-    }
-
     Self {
-      char_units,
+      char_units: Self::parse_char_units(string),
       original: string.to_string(),
       disassembled_cache: OnceLock::new(),
       choseong_cache: OnceLock::new(),
     }
+  }
+
+  fn parse_char_units(string: &str) -> Vec<CharUnit> {
+    let mut char_units = Vec::with_capacity(string.chars().count());
+    let mut chars = string.chars().peekable();
+
+    while let Some(ch) = chars.next() {
+      if let Some(letter) = HangulLetter::parse_from_char(ch) {
+        char_units.push(CharUnit {
+          original: ch,
+          hangul: Some(letter),
+        });
+        continue;
+      }
+
+      if Choseong::is_conjoining_choseong(ch as u32) {
+        if let Some(&jung) = chars.peek() {
+          if Jungseong::is_conjoining_jungseong(jung as u32) {
+            chars.next();
+
+            let mut syllable = String::with_capacity(3);
+            syllable.push(ch);
+            syllable.push(jung);
+
+            if let Some(&jong) = chars.peek() {
+              if Jongseong::is_conjoining_jongseong(jong as u32) {
+                syllable.push(chars.next().unwrap());
+              }
+            }
+
+            let letter = HangulLetter::parse(&syllable)
+              .expect("choseong+jungseong(+jongseong) must form a valid NFD syllable");
+
+            char_units.push(CharUnit {
+              original: ch,
+              hangul: Some(letter),
+            });
+            continue;
+          }
+        }
+      }
+
+      char_units.push(CharUnit {
+        original: ch,
+        hangul: None,
+      });
+    }
+
+    char_units
   }
 
   pub fn original(&self) -> &str {
@@ -361,11 +403,43 @@ mod tests {
   }
 
   #[test]
-  fn test_nfd_input_passthrough() {
-    let nfd = "\u{1100}\u{1161}\u{11AB}";
-    let sentence = Hangul::new(nfd);
-    assert_eq!(sentence.disassemble(), nfd);
-    assert_eq!(sentence.get_choseong(), nfd);
+  fn test_nfd_input() {
+    let nfd_gan = "\u{1100}\u{1161}\u{11AB}";
+    let sentence = Hangul::new(nfd_gan);
+    assert_eq!(sentence.len(), 1);
+    assert_eq!(sentence.original(), nfd_gan);
+    assert_eq!(sentence.disassemble(), "ㄱㅏㄴ");
+    assert_eq!(sentence.get_choseong(), "ㄱ");
+
+    let nfd_ga = "\u{1100}\u{1161}";
+    let sentence = Hangul::new(nfd_ga);
+    assert_eq!(sentence.len(), 1);
+    assert_eq!(sentence.disassemble(), "ㄱㅏ");
+    assert_eq!(sentence.get_choseong(), "ㄱ");
+  }
+
+  #[test]
+  fn test_nfd_mixed_with_nfc_and_non_hangul() {
+    let mixed = Hangul::new("Hello \u{1112}\u{1161}\u{11AB}!");
+    assert_eq!(mixed.len(), 8);
+    assert_eq!(mixed.disassemble(), "Hello ㅎㅏㄴ!");
+    assert_eq!(mixed.get_choseong(), "Hello ㅎ!");
+
+    let mixed_nfc_nfd = Hangul::new("가\u{1100}\u{1161}");
+    assert_eq!(mixed_nfc_nfd.len(), 2);
+    assert_eq!(mixed_nfc_nfd.disassemble(), "ㄱㅏㄱㅏ");
+    assert_eq!(mixed_nfc_nfd.get_choseong(), "ㄱㄱ");
+  }
+
+  #[test]
+  fn test_lone_conjoining_jamo_passthrough() {
+    let choseong_only = Hangul::new("\u{1100}");
+    assert_eq!(choseong_only.len(), 1);
+    assert_eq!(choseong_only.disassemble(), "\u{1100}");
+    assert_eq!(choseong_only.get_choseong(), "\u{1100}");
+
+    let jungseong_only = Hangul::new("\u{1161}");
+    assert_eq!(jungseong_only.disassemble(), "\u{1161}");
   }
 
   #[test]

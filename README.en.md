@@ -26,9 +26,11 @@ assert_eq!(text.get_choseong(), "ㅇㄴㅎㅅㅇ");
 // Can handle non-Hangul characters too
 let mixed = Hangul::new("Hello 안녕!");
 assert_eq!(mixed.get_choseong(), "Hello ㅇㄴ!");
-```
 
-> Currently, the library can only properly process Hangul strings in NFC format.
+// Both NFC and NFD are supported
+let nfd = Hangul::new("\u{1100}\u{1161}\u{11AB}"); // 간
+assert_eq!(nfd.disassemble(), "ㄱㅏㄴ");
+```
 
 ## Node.js Usage Examples
 

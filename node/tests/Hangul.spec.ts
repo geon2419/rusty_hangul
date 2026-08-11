@@ -58,10 +58,10 @@ describe("Hangul class", () => {
 			expect(new Hangul("가A").disassemble()).toBe("ㄱㅏA");
 		});
 
-		// NFD 입력을 그대로 유지하는지 테스트
-		it("should pass through NFD input", () => {
+		// NFD 입력을 음절 단위로 분해하는지 테스트
+		it("should disassemble NFD input", () => {
 			const nfd = "\u1100\u1161\u11AB";
-			expect(new Hangul(nfd).disassemble()).toBe(nfd);
+			expect(new Hangul(nfd).disassemble()).toBe("ㄱㅏㄴ");
 		});
 	});
 
@@ -113,10 +113,10 @@ describe("Hangul class", () => {
 			expect(new Hangul("가A").getChoseong()).toBe("ㄱA");
 		});
 
-		// NFD 입력을 그대로 유지하는지 테스트
-		it("should pass through NFD input", () => {
+		// NFD 입력에서 초성을 추출하는지 테스트
+		it("should extract choseong from NFD input", () => {
 			const nfd = "\u1100\u1161\u11AB";
-			expect(new Hangul(nfd).getChoseong()).toBe(nfd);
+			expect(new Hangul(nfd).getChoseong()).toBe("ㄱ");
 		});
 
 		// 동일 인스턴스에서 반복 호출 시 결과가 동일한지 테스트
