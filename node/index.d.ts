@@ -4,4 +4,6 @@ export declare class Hangul {
   constructor(text: string)
   disassemble(): string
   getChoseong(): string
+  hasBatchim(): boolean
+  josa(pair: string): string
 }

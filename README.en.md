@@ -30,6 +30,11 @@ assert_eq!(mixed.get_choseong(), "Hello ㅇㄴ!");
 // Both NFC and NFD are supported
 let nfd = Hangul::new("\u{1100}\u{1161}\u{11AB}"); // 간
 assert_eq!(nfd.disassemble(), "ㄱㅏㄴ");
+
+// Detect batchim and select a josa
+assert!(!Hangul::new("사과").has_batchim());
+assert_eq!(Hangul::new("사과").josa("을/를").unwrap(), "사과를");
+assert_eq!(Hangul::new("수박").josa("을/를").unwrap(), "수박을");
 ```
 
 ## Node.js Usage Examples
@@ -47,4 +52,8 @@ console.log(text.getChoseong()); // "ㅇㄴㅎㅅㅇ"
 // Can handle non-Hangul characters too
 const mixed = new Hangul("Hello 안녕!");
 console.log(mixed.getChoseong()); // "Hello ㅇㄴ!"
+
+// Detect batchim and select a josa
+console.log(new Hangul("한").hasBatchim()); // true
+console.log(new Hangul("사과").josa("을/를")); // "사과를"
 ```

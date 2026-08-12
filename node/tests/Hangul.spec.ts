@@ -163,4 +163,53 @@ describe("Hangul class", () => {
 			expect(hangul.getChoseong()).toBe("ㅇㄴ Hello");
 		});
 	});
+
+	describe("hasBatchim method", () => {
+		it("should detect whether the last Hangul syllable has batchim", () => {
+			expect(new Hangul("한").hasBatchim()).toBe(true);
+			expect(new Hangul("하").hasBatchim()).toBe(false);
+			expect(new Hangul("값!").hasBatchim()).toBe(true);
+			expect(new Hangul("Hello").hasBatchim()).toBe(false);
+		});
+
+		it("should support NFD input", () => {
+			expect(new Hangul("\u1112\u1161\u11AB").hasBatchim()).toBe(true);
+		});
+	});
+
+	describe("josa method", () => {
+		it("should select particles for syllables without batchim", () => {
+			const hangul = new Hangul("사과");
+
+			expect(hangul.josa("을/를")).toBe("사과를");
+			expect(hangul.josa("이/가")).toBe("사과가");
+			expect(hangul.josa("은/는")).toBe("사과는");
+			expect(hangul.josa("와/과")).toBe("사과와");
+			expect(hangul.josa("으로/로")).toBe("사과로");
+			expect(hangul.josa("이에요/예요")).toBe("사과예요");
+		});
+
+		it("should select particles for syllables with batchim", () => {
+			const hangul = new Hangul("수박");
+
+			expect(hangul.josa("을/를")).toBe("수박을");
+			expect(hangul.josa("이/가")).toBe("수박이");
+			expect(hangul.josa("은/는")).toBe("수박은");
+			expect(hangul.josa("와/과")).toBe("수박과");
+			expect(hangul.josa("으로/로")).toBe("수박으로");
+			expect(hangul.josa("이에요/예요")).toBe("수박이에요");
+		});
+
+		it("should handle the rieul exception and trailing punctuation", () => {
+			expect(new Hangul("서울").josa("으로/로")).toBe("서울로");
+			expect(new Hangul("값!").josa("을/를")).toBe("값을!");
+		});
+
+		it("should support NFD input and reject unsupported pairs", () => {
+			expect(new Hangul("\u1112\u1161\u11AB").josa("을/를")).toBe(
+				"\u1112\u1161\u11AB을",
+			);
+			expect(() => new Hangul("사과").josa("을")).toThrow();
+		});
+	});
 });

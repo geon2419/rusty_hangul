@@ -26,6 +26,19 @@ impl Hangul {
   pub fn get_choseong(&self) -> String {
     self.hangul.get_choseong()
   }
+
+  #[napi]
+  pub fn has_batchim(&self) -> bool {
+    self.hangul.has_batchim()
+  }
+
+  #[napi]
+  pub fn josa(&self, pair: String) -> napi::Result<String> {
+    self
+      .hangul
+      .josa(&pair)
+      .map_err(|error| napi::Error::from_reason(error.to_string()))
+  }
 }
 
 #[cfg(test)]
@@ -120,5 +133,49 @@ mod tests {
   fn test_get_choseong_with_spaces() {
     let hangul = Hangul::new("안녕 하세요".to_string());
     assert_eq!(hangul.get_choseong(), "ㅇㄴ ㅎㅅㅇ");
+  }
+
+  #[test]
+  fn test_has_batchim() {
+    assert!(Hangul::new("한".to_string()).has_batchim());
+    assert!(!Hangul::new("하".to_string()).has_batchim());
+    assert!(Hangul::new("값!".to_string()).has_batchim());
+    assert!(Hangul::new("\u{1112}\u{1161}\u{11AB}".to_string()).has_batchim());
+    assert!(!Hangul::new("Hello".to_string()).has_batchim());
+  }
+
+  #[test]
+  fn test_josa() {
+    assert_eq!(
+      Hangul::new("사과".to_string())
+        .josa("을/를".to_string())
+        .unwrap(),
+      "사과를"
+    );
+    assert_eq!(
+      Hangul::new("수박".to_string())
+        .josa("을/를".to_string())
+        .unwrap(),
+      "수박을"
+    );
+    assert_eq!(
+      Hangul::new("서울".to_string())
+        .josa("으로/로".to_string())
+        .unwrap(),
+      "서울로"
+    );
+    assert_eq!(
+      Hangul::new("값!".to_string())
+        .josa("을/를".to_string())
+        .unwrap(),
+      "값을!"
+    );
+  }
+
+  #[test]
+  fn test_josa_rejects_unsupported_pair() {
+    assert!(Hangul::new("사과".to_string())
+      .josa("을".to_string())
+      .is_err());
   }
 }
