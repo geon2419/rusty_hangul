@@ -3,11 +3,13 @@ use std::sync::OnceLock;
 use crate::choseong::Choseong;
 use crate::hangul_letter::HangulLetter;
 use crate::jongseong::Jongseong;
+use crate::josa::{JosaError, JosaPair};
 use crate::jungseong::Jungseong;
 
 struct CharUnit {
   original: char,
   hangul: Option<HangulLetter>,
+  end_byte: usize,
 }
 
 pub struct Hangul {
@@ -29,29 +31,33 @@ impl Hangul {
 
   fn parse_char_units(string: &str) -> Vec<CharUnit> {
     let mut char_units = Vec::with_capacity(string.chars().count());
-    let mut chars = string.chars().peekable();
+    let mut chars = string.char_indices().peekable();
 
-    while let Some(ch) = chars.next() {
+    while let Some((start_byte, ch)) = chars.next() {
       if let Some(letter) = HangulLetter::parse_from_char(ch) {
         char_units.push(CharUnit {
           original: ch,
           hangul: Some(letter),
+          end_byte: start_byte + ch.len_utf8(),
         });
         continue;
       }
 
       if Choseong::is_conjoining_choseong(ch as u32) {
-        if let Some(&jung) = chars.peek() {
+        if let Some(&(_, jung)) = chars.peek() {
           if Jungseong::is_conjoining_jungseong(jung as u32) {
-            chars.next();
+            let (jung_start_byte, jung) = chars.next().unwrap();
 
             let mut syllable = String::with_capacity(3);
             syllable.push(ch);
             syllable.push(jung);
+            let mut end_byte = jung_start_byte + jung.len_utf8();
 
-            if let Some(&jong) = chars.peek() {
+            if let Some(&(jong_start_byte, jong)) = chars.peek() {
               if Jongseong::is_conjoining_jongseong(jong as u32) {
-                syllable.push(chars.next().unwrap());
+                chars.next();
+                syllable.push(jong);
+                end_byte = jong_start_byte + jong.len_utf8();
               }
             }
 
@@ -61,6 +67,7 @@ impl Hangul {
             char_units.push(CharUnit {
               original: ch,
               hangul: Some(letter),
+              end_byte,
             });
             continue;
           }
@@ -70,6 +77,7 @@ impl Hangul {
       char_units.push(CharUnit {
         original: ch,
         hangul: None,
+        end_byte: start_byte + ch.len_utf8(),
       });
     }
 
@@ -100,6 +108,48 @@ impl Hangul {
       .choseong_cache
       .get_or_init(|| self.choseong_uncached())
       .clone()
+  }
+
+  pub fn has_batchim(&self) -> bool {
+    self
+      .last_hangul_letter()
+      .map(HangulLetter::has_batchim)
+      .unwrap_or(false)
+  }
+
+  pub fn josa(&self, pair: &str) -> Result<String, JosaError> {
+    let pair = JosaPair::parse(pair).ok_or_else(|| JosaError::InvalidPair(pair.to_owned()))?;
+    let last_letter = self.last_hangul_letter();
+    let has_batchim = last_letter.map(HangulLetter::has_batchim).unwrap_or(false);
+    let has_rieul_batchim = last_letter
+      .and_then(|letter| letter.jongseong.as_ref())
+      .map(|jongseong| jongseong.compatibility_value == 'ㄹ')
+      .unwrap_or(false);
+    let particle = pair.select(has_batchim, has_rieul_batchim);
+    let insertion = self
+      .last_hangul_unit()
+      .map(|unit| unit.end_byte)
+      .unwrap_or(self.original.len());
+
+    let mut result = String::with_capacity(self.original.len() + particle.len());
+    result.push_str(&self.original[..insertion]);
+    result.push_str(particle);
+    result.push_str(&self.original[insertion..]);
+    Ok(result)
+  }
+
+  fn last_hangul_unit(&self) -> Option<&CharUnit> {
+    self
+      .char_units
+      .iter()
+      .rev()
+      .find(|unit| unit.hangul.is_some())
+  }
+
+  fn last_hangul_letter(&self) -> Option<&HangulLetter> {
+    self
+      .last_hangul_unit()
+      .and_then(|unit| unit.hangul.as_ref())
   }
 
   fn disassemble_uncached(&self) -> String {
@@ -361,6 +411,59 @@ mod tests {
 
     let empty = Hangul::new("");
     assert_eq!(empty.get_choseong(), "");
+  }
+
+  #[test]
+  fn test_has_batchim() {
+    assert!(Hangul::new("한").has_batchim());
+    assert!(Hangul::new("값!").has_batchim());
+    assert!(Hangul::new("\u{1112}\u{1161}\u{11AB}").has_batchim());
+
+    assert!(!Hangul::new("하").has_batchim());
+    assert!(!Hangul::new("Hello").has_batchim());
+    assert!(!Hangul::new("").has_batchim());
+    assert!(!Hangul::new("한 가").has_batchim());
+  }
+
+  #[test]
+  fn test_josa() {
+    assert_eq!(Hangul::new("사과").josa("을/를").unwrap(), "사과를");
+    assert_eq!(Hangul::new("사과").josa("이/가").unwrap(), "사과가");
+    assert_eq!(Hangul::new("사과").josa("은/는").unwrap(), "사과는");
+    assert_eq!(Hangul::new("사과").josa("와/과").unwrap(), "사과와");
+    assert_eq!(Hangul::new("사과").josa("으로/로").unwrap(), "사과로");
+    assert_eq!(Hangul::new("사과").josa("이에요/예요").unwrap(), "사과예요");
+
+    assert_eq!(Hangul::new("수박").josa("을/를").unwrap(), "수박을");
+    assert_eq!(Hangul::new("수박").josa("이/가").unwrap(), "수박이");
+    assert_eq!(Hangul::new("수박").josa("은/는").unwrap(), "수박은");
+    assert_eq!(Hangul::new("수박").josa("와/과").unwrap(), "수박과");
+    assert_eq!(Hangul::new("수박").josa("으로/로").unwrap(), "수박으로");
+    assert_eq!(
+      Hangul::new("수박").josa("이에요/예요").unwrap(),
+      "수박이에요"
+    );
+  }
+
+  #[test]
+  fn test_josa_rieul_exception_and_trailing_punctuation() {
+    assert_eq!(Hangul::new("서울").josa("으로/로").unwrap(), "서울로");
+    assert_eq!(Hangul::new("달").josa("으로/로").unwrap(), "달로");
+    assert_eq!(Hangul::new("값!").josa("을/를").unwrap(), "값을!");
+    assert_eq!(Hangul::new("사과?!").josa("을/를").unwrap(), "사과를?!");
+  }
+
+  #[test]
+  fn test_josa_with_nfd_and_non_hangul() {
+    let nfd = "\u{1112}\u{1161}\u{11AB}";
+    assert_eq!(Hangul::new(nfd).josa("을/를").unwrap(), format!("{nfd}을"));
+    assert_eq!(Hangul::new("Hello").josa("이/가").unwrap(), "Hello가");
+  }
+
+  #[test]
+  fn test_josa_rejects_unsupported_pairs() {
+    let error = Hangul::new("사과").josa("을").unwrap_err();
+    assert_eq!(error, JosaError::InvalidPair("을".to_string()));
   }
 
   #[test]
