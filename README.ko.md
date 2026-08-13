@@ -1,7 +1,5 @@
 # rusty_hangul
 
-🚧 현재 개발 중인 라이브러리입니다. API가 변경될 수 있습니다.
-
 [English](./README.md)
 
 ## 소개 (Introduction)

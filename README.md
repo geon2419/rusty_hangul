@@ -1,7 +1,5 @@
 # rusty_hangul
 
-🚧 This library is currently under development. The API may change.
-
 [한국어](./README.ko.md)
 
 ## Introduction
