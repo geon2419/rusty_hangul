@@ -34,3 +34,33 @@ pub fn assemble(text: &str, policy: Option<String>) -> Result<String, JsValue> {
 
   Ok(hangul::assemble_with_policy(text, policy))
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  fn assert_assemble_policies() {
+    assert_eq!(assemble("ㄱㅏㄱㅅㅏ", None).unwrap(), "각사");
+    assert_eq!(
+      assemble("ㄱㅏㄱㅅㅏ", Some("compound-final".to_string())).unwrap(),
+      "갃ㅏ"
+    );
+  }
+
+  #[test]
+  fn test_assemble_policies() {
+    assert_assemble_policies();
+  }
+
+  #[cfg(target_arch = "wasm32")]
+  #[wasm_bindgen_test::wasm_bindgen_test]
+  fn test_assemble_policies_in_wasm_runtime() {
+    assert_assemble_policies();
+  }
+
+  #[cfg(target_arch = "wasm32")]
+  #[wasm_bindgen_test::wasm_bindgen_test]
+  fn test_assemble_rejects_unknown_policy() {
+    assert!(assemble("ㄱㅏ", Some("unknown".to_string())).is_err());
+  }
+}

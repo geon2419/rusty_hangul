@@ -228,11 +228,21 @@ describe("Hangul class", () => {
 		});
 
 		it("should allow callers to choose the ambiguity policy", () => {
+			expect(assemble("ㄱㅏㄱㅅㅏ")).toBe(
+				assemble("ㄱㅏㄱㅅㅏ", "next-syllable"),
+			);
 			expect(assemble("ㄱㅏㄱㅅㅏ", "next-syllable")).toBe("각사");
 			expect(assemble("ㄱㅏㄱㅅㅏ", "compound-final")).toBe("갃ㅏ");
 			expect(() =>
 				assemble("ㄱㅏ", "unknown" as "next-syllable"),
 			).toThrow();
+		});
+
+		it("should leave incomplete and unsupported Jamo unchanged", () => {
+			expect(assemble("")).toBe("");
+			expect(assemble("ㄱ")).toBe("ㄱ");
+			expect(assemble("ㄸㅃㅉ")).toBe("ㄸㅃㅉ");
+			expect(assemble("가")).toBe("가");
 		});
 	});
 });

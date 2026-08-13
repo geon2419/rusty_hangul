@@ -181,11 +181,93 @@ mod tests {
   }
 
   #[test]
+  fn test_all_compound_jongseong_policy_boundaries() {
+    let compounds = [
+      ('ㄱ', 'ㅅ'),
+      ('ㄴ', 'ㅈ'),
+      ('ㄴ', 'ㅎ'),
+      ('ㄹ', 'ㄱ'),
+      ('ㄹ', 'ㅁ'),
+      ('ㄹ', 'ㅂ'),
+      ('ㄹ', 'ㅅ'),
+      ('ㄹ', 'ㅌ'),
+      ('ㄹ', 'ㅍ'),
+      ('ㄹ', 'ㅎ'),
+      ('ㅂ', 'ㅅ'),
+    ];
+
+    for (first, second) in compounds {
+      let input = format!("ㄱㅏ{first}{second}ㅏ");
+      let simple_final = compose_syllable(0, 0, Jongseong::compatibility_index(first).unwrap());
+      let next_syllable = assemble(&format!("{second}ㅏ"));
+      let compound_final = compose_syllable(0, 0, complex_jongseong_index(first, second).unwrap());
+
+      assert_eq!(
+        assemble(&input),
+        format!("{simple_final}{next_syllable}"),
+        "next-syllable policy failed for {input}"
+      );
+      assert_eq!(
+        assemble_with_policy(&input, AssemblePolicy::PreferCompoundFinal),
+        format!("{compound_final}ㅏ"),
+        "compound-final policy failed for {input}"
+      );
+    }
+  }
+
+  #[test]
+  fn test_policies_agree_for_unambiguous_inputs() {
+    let inputs = [
+      "",
+      "ㄱ",
+      "ㄱㅏ",
+      "ㄱㅏㄱ",
+      "ㄱㅏㄱㅏ",
+      "ㄱㅏㅂㅅㄷㅏ",
+      "Hello ㄱㅏ!",
+      "안녕",
+    ];
+
+    for input in inputs {
+      assert_eq!(
+        assemble_with_policy(input, AssemblePolicy::PreferNextSyllable),
+        assemble_with_policy(input, AssemblePolicy::PreferCompoundFinal),
+        "policies unexpectedly differ for {input}"
+      );
+    }
+  }
+
+  #[test]
+  fn test_assemble_is_idempotent_for_each_policy() {
+    let inputs = ["ㄱㅏㄱㅅㅏ", "ㄱㅏㅂㅅㄷㅏ", "안녕", "Hello ㄱㅏ!"];
+    let policies = [
+      AssemblePolicy::PreferNextSyllable,
+      AssemblePolicy::PreferCompoundFinal,
+    ];
+
+    for input in inputs {
+      for policy in policies {
+        let once = assemble_with_policy(input, policy);
+        assert_eq!(
+          assemble_with_policy(&once, policy),
+          once,
+          "assembly was not idempotent for {input}"
+        );
+      }
+    }
+  }
+
+  #[test]
   fn test_assemble_preserves_non_jamo_text() {
     assert_eq!(assemble("Hello ㄱㅏ!"), "Hello 가!");
+    assert_eq!(assemble(""), "");
     assert_eq!(assemble("ㄱ"), "ㄱ");
     assert_eq!(assemble("ㅏ"), "ㅏ");
     assert_eq!(assemble("ㄱㄴ"), "ㄱㄴ");
+    assert_eq!(assemble("ㄸㅃㅉ"), "ㄸㅃㅉ");
+    assert_eq!(assemble("ㅥㆎ🙂"), "ㅥㆎ🙂");
+    assert_eq!(assemble("\u{1100}\u{1161}"), "\u{1100}\u{1161}");
+    assert_eq!(assemble("ㄱㅏㄸ"), "가ㄸ");
     assert_eq!(assemble("안녕"), "안녕");
 
     let nfd = Hangul::new("\u{1100}\u{1161}\u{11AB}");
