@@ -15,7 +15,7 @@ Hangul string processing in Rust — syllable disassembly, choseong extraction, 
 
 ## Packages
 
-This repository is a Cargo and bun workspace. **Nothing is published to crates.io or npm yet.**
+This repository is a Cargo and bun workspace. It is not published to crates.io or npm; use git or a local clone.
 
 | Path | Package name | Role |
 | --- | --- | --- |
@@ -27,38 +27,35 @@ A browser demo lives in [`examples/browser-basic`](./examples/browser-basic).
 
 ## Installation
 
-You need a [Rust toolchain](https://rustup.rs/) and [bun](https://bun.sh/) (`>= 1.3.3`). Node.js bindings require Node `>= 20`. WebAssembly builds also need [`wasm-pack`](https://rustwasm.github.io/wasm-pack/).
-
-Clone the repo, then:
-
-```sh
-bun install
-```
+You need a [Rust toolchain](https://rustup.rs/). Node.js and WebAssembly bindings also need [bun](https://bun.sh/) (`>= 1.3.3`). Node.js bindings require Node `>= 20`. WebAssembly builds also need [`wasm-pack`](https://rustwasm.github.io/wasm-pack/).
 
 ### Rust
 
 The crate name is `hangul`, not `rusty_hangul`.
-
-From git:
 
 ```toml
 [dependencies]
 hangul = { git = "https://github.com/geon2419/rusty_hangul" }
 ```
 
-From a local clone:
+From a local clone, point at `core/`:
 
 ```toml
 [dependencies]
 hangul = { path = "path/to/rusty_hangul/core" }
 ```
 
-### Node.js
+### Node.js and WebAssembly
 
-Build the native addon, then import the workspace package named `node`:
+Clone this repository, then build the binding you need. These are workspace packages, not registry packages.
 
 ```sh
-bun run node:build
+git clone https://github.com/geon2419/rusty_hangul
+cd rusty_hangul
+bun install
+bun run node:build   # native addon
+# or
+bun run wasm:build
 ```
 
 ```ts
@@ -67,19 +64,13 @@ import { Hangul, assemble } from "node";
 
 That import works for other packages in this bun workspace. Outside the workspace, point at `./node` after a local build.
 
-### WebAssembly
-
-```sh
-bun run wasm:build
-```
-
 ```ts
 import init, { disassemble, getChoseong } from "./wasm/pkg/hangul";
 
 await init();
 ```
 
-Adjust the import path to match your app. See [`examples/browser-basic`](./examples/browser-basic) for a Vite setup.
+Adjust the WASM import path to match your app. See [`examples/browser-basic`](./examples/browser-basic) for a Vite setup.
 
 ## Rust example
 

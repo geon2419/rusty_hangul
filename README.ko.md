@@ -15,7 +15,7 @@ Rust로 만든 한글 문자열 처리 라이브러리입니다. 음절 분해, 
 
 ## 구성
 
-이 저장소는 Cargo와 bun 워크스페이스입니다. **crates.io와 npm에는 아직 배포되어 있지 않습니다.**
+이 저장소는 Cargo와 bun 워크스페이스입니다. crates.io와 npm에는 올리지 않으며, git 또는 로컬 클론으로 사용합니다.
 
 | 경로 | 패키지 이름 | 역할 |
 | --- | --- | --- |
@@ -27,38 +27,35 @@ Rust로 만든 한글 문자열 처리 라이브러리입니다. 음절 분해, 
 
 ## 설치
 
-[Rust 툴체인](https://rustup.rs/)과 [bun](https://bun.sh/) (`>= 1.3.3`)이 필요합니다. Node.js 바인딩은 Node `>= 20`이 필요하고, WebAssembly 빌드에는 [`wasm-pack`](https://rustwasm.github.io/wasm-pack/)이 필요합니다.
-
-저장소를 클론한 뒤:
-
-```sh
-bun install
-```
+[Rust 툴체인](https://rustup.rs/)이 필요합니다. Node.js·WebAssembly 바인딩은 [bun](https://bun.sh/) (`>= 1.3.3`)도 필요합니다. Node.js 바인딩은 Node `>= 20`이 필요하고, WebAssembly 빌드에는 [`wasm-pack`](https://rustwasm.github.io/wasm-pack/)이 필요합니다.
 
 ### Rust
 
 크레이트 이름은 `rusty_hangul`이 아니라 `hangul`입니다.
-
-git에서:
 
 ```toml
 [dependencies]
 hangul = { git = "https://github.com/geon2419/rusty_hangul" }
 ```
 
-로컬 클론에서:
+로컬 클론에서는 `core/`를 가리킵니다.
 
 ```toml
 [dependencies]
 hangul = { path = "path/to/rusty_hangul/core" }
 ```
 
-### Node.js
+### Node.js와 WebAssembly
 
-네이티브 애드온을 빌드한 뒤, 워크스페이스 패키지 이름 `node`로 import합니다.
+이 저장소를 클론한 뒤 필요한 바인딩을 빌드합니다. 레지스트리 패키지가 아니라 워크스페이스 패키지입니다.
 
 ```sh
-bun run node:build
+git clone https://github.com/geon2419/rusty_hangul
+cd rusty_hangul
+bun install
+bun run node:build   # 네이티브 애드온
+# 또는
+bun run wasm:build
 ```
 
 ```ts
@@ -67,19 +64,13 @@ import { Hangul, assemble } from "node";
 
 이 import는 이 bun 워크스페이스 안의 다른 패키지에서 동작합니다. 워크스페이스 밖에서는 로컬 빌드 후 `./node`를 가리키면 됩니다.
 
-### WebAssembly
-
-```sh
-bun run wasm:build
-```
-
 ```ts
 import init, { disassemble, getChoseong } from "./wasm/pkg/hangul";
 
 await init();
 ```
 
-앱 구조에 맞게 import 경로를 바꾸면 됩니다. Vite 설정은 [`examples/browser-basic`](./examples/browser-basic)을 참고하세요.
+WASM import 경로는 앱 구조에 맞게 바꾸면 됩니다. Vite 설정은 [`examples/browser-basic`](./examples/browser-basic)을 참고하세요.
 
 ## Rust 예시
 
