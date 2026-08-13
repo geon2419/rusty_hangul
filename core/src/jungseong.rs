@@ -93,6 +93,12 @@ impl Jungseong {
       .get(offset as usize)
       .copied()
   }
+
+  pub(crate) fn compatibility_index(ch: char) -> Option<usize> {
+    COMPATIBILITY_JUNGSEONG_MAPPING
+      .iter()
+      .position(|&unicode| unicode == ch as u32)
+  }
 }
 
 #[cfg(test)]

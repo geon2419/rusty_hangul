@@ -7,3 +7,7 @@ export declare class Hangul {
   hasBatchim(): boolean
   josa(pair: string): string
 }
+
+export type AssemblePolicy = "next-syllable" | "compound-final"
+
+export declare function assemble(text: string, policy?: AssemblePolicy): string

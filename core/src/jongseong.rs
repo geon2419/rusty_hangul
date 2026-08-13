@@ -72,6 +72,13 @@ impl Jongseong {
     COMPAT_JONGSEONG_BASE <= unicode && unicode <= COMPAT_JONGSEONG_LAST
   }
 
+  pub(crate) fn compatibility_index(ch: char) -> Option<usize> {
+    COMPATIBILITY_JONGSEONG_MAPPING
+      .iter()
+      .position(|&unicode| unicode == ch as u32)
+      .map(|index| index + 1)
+  }
+
   #[inline]
   pub fn is_complex_jongseong(&self) -> bool {
     COMPLEX_JONGSEONG_MAPPING.contains(&self.compatibility_unicode)

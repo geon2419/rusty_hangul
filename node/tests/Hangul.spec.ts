@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { Hangul } from "../index";
+import { assemble, Hangul } from "../index";
 
 describe("Hangul class", () => {
 	describe("disassemble method", () => {
@@ -210,6 +210,64 @@ describe("Hangul class", () => {
 				"\u1112\u1161\u11AB을",
 			);
 			expect(() => new Hangul("사과").josa("을")).toThrow();
+		});
+	});
+
+	describe("assemble function", () => {
+		it("should compose basic and compound syllables", () => {
+			expect(assemble("ㄱㅏ")).toBe("가");
+			expect(assemble("ㄱㅘ")).toBe("과");
+			expect(assemble("ㄱㅏㅂㅅ")).toBe("값");
+		});
+
+		it("should preserve syllable boundaries and non-Jamo text", () => {
+			expect(assemble("ㅇㅏㄴㄴㅕㅇ")).toBe("안녕");
+			expect(assemble("ㄱㅏㄱㅅㅏ")).toBe("각사");
+			expect(assemble("Hello ㄱㅏ!")).toBe("Hello 가!");
+			expect(assemble("ㄱ")).toBe("ㄱ");
+		});
+
+		it("should allow callers to choose the ambiguity policy", () => {
+			expect(assemble("ㄱㅏㄱㅅㅏ")).toBe(
+				assemble("ㄱㅏㄱㅅㅏ", "next-syllable"),
+			);
+			expect(assemble("ㄱㅏㄱㅅㅏ", "next-syllable")).toBe("각사");
+			expect(assemble("ㄱㅏㄱㅅㅏ", "compound-final")).toBe("갃ㅏ");
+			expect(() =>
+				assemble("ㄱㅏ", "unknown" as "next-syllable"),
+			).toThrow();
+		});
+
+		it("should treat precomposed compound finals as unambiguous", () => {
+			const compounds = [
+				["ㄳ", "갃"],
+				["ㄵ", "갅"],
+				["ㄶ", "갆"],
+				["ㄺ", "갉"],
+				["ㄻ", "갊"],
+				["ㄼ", "갋"],
+				["ㄽ", "갌"],
+				["ㄾ", "갍"],
+				["ㄿ", "갎"],
+				["ㅀ", "갏"],
+				["ㅄ", "값"],
+			] as const;
+
+			for (const [compound, syllable] of compounds) {
+				const input = `ㄱㅏ${compound}ㅏ`;
+				const expected = `${syllable}ㅏ`;
+
+				expect(assemble(input)).toBe(expected);
+				expect(assemble(input, "next-syllable")).toBe(expected);
+				expect(assemble(input, "compound-final")).toBe(expected);
+			}
+		});
+
+		it("should leave incomplete and unsupported Jamo unchanged", () => {
+			expect(assemble("")).toBe("");
+			expect(assemble("ㄱ")).toBe("ㄱ");
+			expect(assemble("ㄸㅃㅉ")).toBe("ㄸㅃㅉ");
+			expect(assemble("가")).toBe("가");
 		});
 	});
 });

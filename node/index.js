@@ -375,3 +375,4 @@ if (!nativeBinding) {
 }
 
 module.exports.Hangul = nativeBinding.Hangul
+module.exports.assemble = nativeBinding.assemble
