@@ -17,6 +17,14 @@ export declare class Hangul {
   hasBatchim(): boolean
   josa(pair: string): string
   josaParticle(pair: string): string
+  containsChoseong(query: string): boolean
+  findChoseong(query: string): ChoseongMatch | null
+}
+export declare class ChoseongMatch {
+  get start(): number
+  get end(): number
+  get byteStart(): number
+  get byteEnd(): number
 }
 
 export type AssemblePolicy = "next-syllable" | "compound-final"

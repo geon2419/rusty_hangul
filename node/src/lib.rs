@@ -40,6 +40,37 @@ impl HangulCharUnit {
   }
 }
 
+#[napi(js_name = "ChoseongMatch")]
+pub struct ChoseongMatchJs {
+  start: u32,
+  end: u32,
+  byte_start: u32,
+  byte_end: u32,
+}
+
+#[napi]
+impl ChoseongMatchJs {
+  #[napi(getter)]
+  pub fn start(&self) -> u32 {
+    self.start
+  }
+
+  #[napi(getter)]
+  pub fn end(&self) -> u32 {
+    self.end
+  }
+
+  #[napi(getter)]
+  pub fn byte_start(&self) -> u32 {
+    self.byte_start
+  }
+
+  #[napi(getter)]
+  pub fn byte_end(&self) -> u32 {
+    self.byte_end
+  }
+}
+
 #[napi]
 pub struct Hangul {
   hangul: hangul::Hangul,
@@ -100,6 +131,16 @@ impl Hangul {
       .map(str::to_string)
       .map_err(|error| napi::Error::from_reason(error.to_string()))
   }
+
+  #[napi]
+  pub fn contains_choseong(&self, query: String) -> bool {
+    self.hangul.contains_choseong(&query)
+  }
+
+  #[napi]
+  pub fn find_choseong(&self, query: String) -> Option<ChoseongMatchJs> {
+    self.hangul.find_choseong(&query).map(match_to_js)
+  }
 }
 
 #[napi]
@@ -143,6 +184,15 @@ fn groups_to_js(groups: Vec<Vec<char>>) -> Vec<Vec<String>> {
     .into_iter()
     .map(|group| group.into_iter().map(String::from).collect())
     .collect()
+}
+
+fn match_to_js(found: hangul::ChoseongMatch) -> ChoseongMatchJs {
+  ChoseongMatchJs {
+    start: found.start as u32,
+    end: found.end as u32,
+    byte_start: found.byte_start as u32,
+    byte_end: found.byte_end as u32,
+  }
 }
 
 #[cfg(test)]
@@ -373,5 +423,17 @@ mod tests {
     assert!(Hangul::new("사과".to_string())
       .josa_particle("을".to_string())
       .is_err());
+  }
+
+  #[test]
+  fn test_choseong_search() {
+    let hangul = Hangul::new("한글".to_string());
+    assert!(hangul.contains_choseong("ㅎㄱ".to_string()));
+    let found = hangul.find_choseong("한ㄱ".to_string()).unwrap();
+    assert_eq!(found.start(), 0);
+    assert_eq!(found.end(), 2);
+    assert!(Hangul::new("한글".to_string())
+      .find_choseong("ㅎㄴ".to_string())
+      .is_none());
   }
 }

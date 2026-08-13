@@ -59,6 +59,35 @@ pub fn assemble(text: &str, policy: Option<String>) -> Result<String, JsValue> {
   Ok(hangul::assemble_with_policy(text, policy))
 }
 
+#[wasm_bindgen(js_name = containsChoseong)]
+pub fn contains_choseong(text: &str, query: &str) -> bool {
+  Hangul::new(text).contains_choseong(query)
+}
+
+#[wasm_bindgen(js_name = findChoseong)]
+pub fn find_choseong(text: &str, query: &str) -> Option<JsChoseongMatch> {
+  Hangul::new(text).find_choseong(query).map(match_to_js)
+}
+
+#[wasm_bindgen(js_name = ChoseongMatch)]
+pub struct JsChoseongMatch {
+  pub start: usize,
+  pub end: usize,
+  #[wasm_bindgen(js_name = byteStart)]
+  pub byte_start: usize,
+  #[wasm_bindgen(js_name = byteEnd)]
+  pub byte_end: usize,
+}
+
+fn match_to_js(found: hangul::ChoseongMatch) -> JsChoseongMatch {
+  JsChoseongMatch {
+    start: found.start,
+    end: found.end,
+    byte_start: found.byte_start,
+    byte_end: found.byte_end,
+  }
+}
+
 #[wasm_bindgen(getter_with_clone)]
 pub struct HangulCharUnit {
   pub original: String,
@@ -181,6 +210,12 @@ mod tests {
     assert_eq!(josa("수박", "아/야").unwrap(), "수박아");
     assert_eq!(josa("수박", "야/아").unwrap(), "수박아");
     assert_eq!(josa("값!", "이라고/라고").unwrap(), "값이라고!");
+
+    assert!(contains_choseong("한글", "ㅎㄱ"));
+    let found = find_choseong("한글", "한ㄱ").unwrap();
+    assert_eq!(found.start, 0);
+    assert_eq!(found.end, 2);
+    assert!(find_choseong("한글", "ㅎㄴ").is_none());
 
     for sample in ["", "값", "가A!", "과", "Hello 안녕!"] {
       let groups = hangul::Hangul::new(sample).disassemble_to_groups();
