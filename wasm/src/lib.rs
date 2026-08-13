@@ -62,6 +62,7 @@ pub fn assemble(text: &str, policy: Option<String>) -> Result<String, JsValue> {
 #[wasm_bindgen(getter_with_clone)]
 pub struct HangulCharUnit {
   pub original: String,
+  #[wasm_bindgen(js_name = isHangul)]
   pub is_hangul: bool,
   pub choseong: Option<String>,
   pub jungseong: Option<String>,
@@ -226,5 +227,15 @@ mod tests {
     assert_js_groups_match_core("가A!");
     assert_js_groups_match_core("과");
     assert_js_groups_match_core("");
+    assert_js_unit_exposes_is_hangul();
+  }
+
+  #[cfg(target_arch = "wasm32")]
+  fn assert_js_unit_exposes_is_hangul() {
+    let unit = JsValue::from(unit_at("가", 0).unwrap());
+    let camel = js_sys::Reflect::get(&unit, &JsValue::from_str("isHangul")).unwrap();
+    let snake = js_sys::Reflect::get(&unit, &JsValue::from_str("is_hangul")).unwrap();
+    assert_eq!(camel.as_bool(), Some(true));
+    assert!(snake.is_undefined());
   }
 }
