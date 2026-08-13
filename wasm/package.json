@@ -1,6 +1,7 @@
 {
 	"name": "wasm",
 	"description": "WebAssembly bindings for hangul library",
+	"license": "MIT",
 	"main": "pkg/hangul.js",
 	"types": "pkg/hangul.d.ts",
 	"files": ["pkg"],

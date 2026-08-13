@@ -2,6 +2,7 @@
 name = "hangul"
 version = "0.0.1"
 edition = "2021"
+license = "MIT"
 
 [lib]
 path = "src/lib.rs"

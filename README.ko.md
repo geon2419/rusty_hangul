@@ -145,3 +145,7 @@ console.log(hasBatchim("한")); // true
 console.log(josa("사과", "을/를")); // "사과를"
 console.log(assemble("ㄱㅏㅂㅅ")); // "값"
 ```
+
+## 라이선스
+
+[MIT](./LICENSE)
