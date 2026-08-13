@@ -45,6 +45,35 @@ mod tests {
       assemble("ㄱㅏㄱㅅㅏ", Some("compound-final".to_string())).unwrap(),
       "갃ㅏ"
     );
+
+    let compounds = [
+      ('ㄳ', '갃'),
+      ('ㄵ', '갅'),
+      ('ㄶ', '갆'),
+      ('ㄺ', '갉'),
+      ('ㄻ', '갊'),
+      ('ㄼ', '갋'),
+      ('ㄽ', '갌'),
+      ('ㄾ', '갍'),
+      ('ㄿ', '갎'),
+      ('ㅀ', '갏'),
+      ('ㅄ', '값'),
+    ];
+
+    for (compound, syllable) in compounds {
+      let input = format!("ㄱㅏ{compound}ㅏ");
+      let expected = format!("{syllable}ㅏ");
+
+      assert_eq!(assemble(&input, None).unwrap(), expected);
+      assert_eq!(
+        assemble(&input, Some("next-syllable".to_string())).unwrap(),
+        expected
+      );
+      assert_eq!(
+        assemble(&input, Some("compound-final".to_string())).unwrap(),
+        expected
+      );
+    }
   }
 
   #[test]

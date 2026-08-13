@@ -238,6 +238,31 @@ describe("Hangul class", () => {
 			).toThrow();
 		});
 
+		it("should treat precomposed compound finals as unambiguous", () => {
+			const compounds = [
+				["ㄳ", "갃"],
+				["ㄵ", "갅"],
+				["ㄶ", "갆"],
+				["ㄺ", "갉"],
+				["ㄻ", "갊"],
+				["ㄼ", "갋"],
+				["ㄽ", "갌"],
+				["ㄾ", "갍"],
+				["ㄿ", "갎"],
+				["ㅀ", "갏"],
+				["ㅄ", "값"],
+			] as const;
+
+			for (const [compound, syllable] of compounds) {
+				const input = `ㄱㅏ${compound}ㅏ`;
+				const expected = `${syllable}ㅏ`;
+
+				expect(assemble(input)).toBe(expected);
+				expect(assemble(input, "next-syllable")).toBe(expected);
+				expect(assemble(input, "compound-final")).toBe(expected);
+			}
+		});
+
 		it("should leave incomplete and unsupported Jamo unchanged", () => {
 			expect(assemble("")).toBe("");
 			expect(assemble("ㄱ")).toBe("ㄱ");

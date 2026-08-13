@@ -56,11 +56,12 @@ pub fn assemble_with_policy(string: &str, policy: AssemblePolicy) -> String {
     if let Some(&candidate) = chars.get(index + 2) {
       if let Some(candidate_index) = Jongseong::compatibility_index(candidate) {
         let second = chars.get(index + 3).copied();
-        let next_is_jungseong = second
-          .map(|ch| Jungseong::compatibility_index(ch).is_some())
-          .unwrap_or(false);
+        let candidate_starts_syllable = Choseong::compatibility_index(candidate).is_some()
+          && second
+            .map(|ch| Jungseong::compatibility_index(ch).is_some())
+            .unwrap_or(false);
 
-        if !next_is_jungseong {
+        if !candidate_starts_syllable {
           if let Some(second) = second {
             if let Some(complex_index) = complex_jongseong_index(candidate, second) {
               let second_starts_syllable = Choseong::compatibility_index(second).is_some()
@@ -210,6 +211,37 @@ mod tests {
       assert_eq!(
         assemble_with_policy(&input, AssemblePolicy::PreferCompoundFinal),
         format!("{compound_final}ㅏ"),
+        "compound-final policy failed for {input}"
+      );
+    }
+  }
+
+  #[test]
+  fn test_precomposed_compound_jongseong_before_vowel_is_unambiguous() {
+    let compounds = [
+      'ㄳ', 'ㄵ', 'ㄶ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅄ',
+    ];
+
+    for compound in compounds {
+      let input = format!("ㄱㅏ{compound}ㅏ");
+      let expected = format!(
+        "{}ㅏ",
+        compose_syllable(0, 0, Jongseong::compatibility_index(compound).unwrap())
+      );
+
+      assert_eq!(
+        assemble(&input),
+        expected,
+        "default policy failed for {input}"
+      );
+      assert_eq!(
+        assemble_with_policy(&input, AssemblePolicy::PreferNextSyllable),
+        expected,
+        "next-syllable policy failed for {input}"
+      );
+      assert_eq!(
+        assemble_with_policy(&input, AssemblePolicy::PreferCompoundFinal),
+        expected,
         "compound-final policy failed for {input}"
       );
     }
