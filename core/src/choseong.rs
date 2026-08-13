@@ -62,6 +62,12 @@ impl Choseong {
   pub fn is_compatibility_choseong(unicode: u32) -> bool {
     COMPAT_CHOSEONG_BASE <= unicode && unicode <= COMPAT_CHOSEONG_LAST
   }
+
+  pub(crate) fn compatibility_index(ch: char) -> Option<usize> {
+    COMPATIBILITY_CHOSEONG_MAPPING
+      .iter()
+      .position(|&unicode| unicode == ch as u32)
+  }
 }
 
 #[cfg(test)]

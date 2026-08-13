@@ -35,6 +35,9 @@ assert_eq!(nfd.disassemble(), "ㄱㅏㄴ");
 assert!(!Hangul::new("사과").has_batchim());
 assert_eq!(Hangul::new("사과").josa("을/를").unwrap(), "사과를");
 assert_eq!(Hangul::new("수박").josa("을/를").unwrap(), "수박을");
+
+// Assemble Jamo
+assert_eq!(hangul::assemble("ㄱㅏㅂㅅ"), "값");
 ```
 
 ## Node.js Usage Examples
@@ -56,4 +59,7 @@ console.log(mixed.getChoseong()); // "Hello ㅇㄴ!"
 // Detect batchim and select a josa
 console.log(new Hangul("한").hasBatchim()); // true
 console.log(new Hangul("사과").josa("을/를")); // "사과를"
+
+// Assemble Jamo
+console.log(assemble("ㄱㅏㅂㅅ")); // "값"
 ```

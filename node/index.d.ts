@@ -7,3 +7,5 @@ export declare class Hangul {
   hasBatchim(): boolean
   josa(pair: string): string
 }
+
+export declare function assemble(text: string): string

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { Hangul } from "../index";
+import { assemble, Hangul } from "../index";
 
 describe("Hangul class", () => {
 	describe("disassemble method", () => {
@@ -210,6 +210,21 @@ describe("Hangul class", () => {
 				"\u1112\u1161\u11AB을",
 			);
 			expect(() => new Hangul("사과").josa("을")).toThrow();
+		});
+	});
+
+	describe("assemble function", () => {
+		it("should compose basic and compound syllables", () => {
+			expect(assemble("ㄱㅏ")).toBe("가");
+			expect(assemble("ㄱㅘ")).toBe("과");
+			expect(assemble("ㄱㅏㅂㅅ")).toBe("값");
+		});
+
+		it("should preserve syllable boundaries and non-Jamo text", () => {
+			expect(assemble("ㅇㅏㄴㄴㅕㅇ")).toBe("안녕");
+			expect(assemble("ㄱㅏㄱㅅㅏ")).toBe("각사");
+			expect(assemble("Hello ㄱㅏ!")).toBe("Hello 가!");
+			expect(assemble("ㄱ")).toBe("ㄱ");
 		});
 	});
 });

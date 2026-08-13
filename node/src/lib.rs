@@ -41,6 +41,11 @@ impl Hangul {
   }
 }
 
+#[napi]
+pub fn assemble(text: String) -> String {
+  hangul::assemble(&text)
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -177,5 +182,13 @@ mod tests {
     assert!(Hangul::new("사과".to_string())
       .josa("을".to_string())
       .is_err());
+  }
+
+  #[test]
+  fn test_assemble() {
+    assert_eq!(assemble("ㄱㅏ".to_string()), "가");
+    assert_eq!(assemble("ㄱㅏㅂㅅ".to_string()), "값");
+    assert_eq!(assemble("ㄱㅏㄱㅏ".to_string()), "가가");
+    assert_eq!(assemble("Hello ㄱㅏ!".to_string()), "Hello 가!");
   }
 }

@@ -22,3 +22,8 @@ pub fn josa(text: &str, pair: &str) -> Result<String, JsValue> {
     .josa(pair)
     .map_err(|error| JsValue::from_str(&error.to_string()))
 }
+
+#[wasm_bindgen(js_name = assemble)]
+pub fn assemble(text: &str) -> String {
+  hangul::assemble(text)
+}
