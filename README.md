@@ -15,7 +15,7 @@ Hangul string processing in Rust — syllable disassembly, choseong extraction, 
 
 ## Packages
 
-This repository is a Cargo and bun workspace. It is not published to crates.io or npm; use git or a local clone.
+This repository is a Cargo and bun workspace. Tagged releases are on the [Releases](https://github.com/geon2419/rusty_hangul/releases) page.
 
 | Path | Package name | Role |
 | --- | --- | --- |
@@ -35,7 +35,7 @@ The crate name is `hangul`, not `rusty_hangul`.
 
 ```toml
 [dependencies]
-hangul = { git = "https://github.com/geon2419/rusty_hangul" }
+hangul = { git = "https://github.com/geon2419/rusty_hangul", tag = "v0.1.0" }
 ```
 
 From a local clone, point at `core/`:
@@ -47,10 +47,10 @@ hangul = { path = "path/to/rusty_hangul/core" }
 
 ### Node.js and WebAssembly
 
-Clone this repository, then build the binding you need. These are workspace packages, not registry packages.
+Clone this repository at the release tag, then build the binding you need.
 
 ```sh
-git clone https://github.com/geon2419/rusty_hangul
+git clone --branch v0.1.0 --depth 1 https://github.com/geon2419/rusty_hangul
 cd rusty_hangul
 bun install
 bun run node:build   # native addon

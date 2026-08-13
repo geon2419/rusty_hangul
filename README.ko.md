@@ -15,7 +15,7 @@ Rust로 만든 한글 문자열 처리 라이브러리입니다. 음절 분해, 
 
 ## 구성
 
-이 저장소는 Cargo와 bun 워크스페이스입니다. crates.io와 npm에는 올리지 않으며, git 또는 로컬 클론으로 사용합니다.
+이 저장소는 Cargo와 bun 워크스페이스입니다. 태그된 릴리스는 [Releases](https://github.com/geon2419/rusty_hangul/releases)에 있습니다.
 
 | 경로 | 패키지 이름 | 역할 |
 | --- | --- | --- |
@@ -35,7 +35,7 @@ Rust로 만든 한글 문자열 처리 라이브러리입니다. 음절 분해, 
 
 ```toml
 [dependencies]
-hangul = { git = "https://github.com/geon2419/rusty_hangul" }
+hangul = { git = "https://github.com/geon2419/rusty_hangul", tag = "v0.1.0" }
 ```
 
 로컬 클론에서는 `core/`를 가리킵니다.
@@ -47,10 +47,10 @@ hangul = { path = "path/to/rusty_hangul/core" }
 
 ### Node.js와 WebAssembly
 
-이 저장소를 클론한 뒤 필요한 바인딩을 빌드합니다. 레지스트리 패키지가 아니라 워크스페이스 패키지입니다.
+릴리스 태그를 클론한 뒤 필요한 바인딩을 빌드합니다.
 
 ```sh
-git clone https://github.com/geon2419/rusty_hangul
+git clone --branch v0.1.0 --depth 1 https://github.com/geon2419/rusty_hangul
 cd rusty_hangul
 bun install
 bun run node:build   # 네이티브 애드온
