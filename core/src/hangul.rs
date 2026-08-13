@@ -11,6 +11,7 @@ use crate::jungseong::Jungseong;
 struct CharUnit {
   original: char,
   hangul: Option<HangulLetter>,
+  start_byte: usize,
   end_byte: usize,
 }
 
@@ -21,6 +22,8 @@ struct CharUnit {
 pub struct HangulUnit<'a> {
   original: char,
   letter: Option<&'a HangulLetter>,
+  start_byte: usize,
+  end_byte: usize,
 }
 
 impl<'a> HangulUnit<'a> {
@@ -42,6 +45,14 @@ impl<'a> HangulUnit<'a> {
       None => vec![self.original],
     }
   }
+
+  pub fn byte_start(&self) -> usize {
+    self.start_byte
+  }
+
+  pub fn byte_end(&self) -> usize {
+    self.end_byte
+  }
 }
 
 impl CharUnit {
@@ -49,6 +60,8 @@ impl CharUnit {
     HangulUnit {
       original: self.original,
       letter: self.hangul.as_ref(),
+      start_byte: self.start_byte,
+      end_byte: self.end_byte,
     }
   }
 }
@@ -81,6 +94,7 @@ impl Hangul {
         char_units.push(CharUnit {
           original: ch,
           hangul: Some(letter),
+          start_byte,
           end_byte: start_byte + ch.len_utf8(),
         });
         continue;
@@ -110,6 +124,7 @@ impl Hangul {
             char_units.push(CharUnit {
               original: ch,
               hangul: Some(letter),
+              start_byte,
               end_byte,
             });
             continue;
@@ -120,6 +135,7 @@ impl Hangul {
       char_units.push(CharUnit {
         original: ch,
         hangul: None,
+        start_byte,
         end_byte: start_byte + ch.len_utf8(),
       });
     }
@@ -191,6 +207,14 @@ impl Hangul {
       .map(|jongseong| jongseong.compatibility_value == 'ㄹ')
       .unwrap_or(false);
     Ok(pair.select(has_batchim, has_rieul_batchim))
+  }
+
+  pub fn contains_choseong(&self, query: &str) -> bool {
+    self.find_choseong(query).is_some()
+  }
+
+  pub fn find_choseong(&self, query: &str) -> Option<crate::ChoseongMatch> {
+    crate::choseong_search::find_choseong(self, query)
   }
 
   pub fn josa(&self, pair: &str) -> Result<String, JosaError> {

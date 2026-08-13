@@ -9,6 +9,7 @@ Hangul string processing in Rust — syllable disassembly, choseong extraction, 
 - Disassemble Hangul syllables into jamo (NFC and NFD), including grouped output
 - Iterate syllables and inspect choseong / jungseong / jongseong
 - Extract choseong (initial consonants), leaving non-Hangul characters as-is
+- Search text by choseong or progressive syllable prefixes
 - Detect batchim (final consonants) and select a matching josa (or the particle alone)
 - Assemble jamo back into syllables
 
@@ -98,6 +99,8 @@ assert_eq!(
   ]
 );
 assert_eq!(text.get_choseong(), "ㅇㄴㅎㅅㅇ");
+assert!(text.contains_choseong("ㅇㄴㅎ"));
+assert_eq!(text.find_choseong("ㅎㅅ").unwrap().start, 2);
 assert_eq!(text.len(), 5);
 assert!(text.get(0).unwrap().is_hangul());
 
@@ -130,6 +133,8 @@ console.log(text.disassemble()); // "ㅇㅏㄴㄴㅕㅇㅎㅏㅅㅔㅇㅛ"
 console.log(text.disassembleToGroups());
 // [["ㅇ", "ㅏ", "ㄴ"], ["ㄴ", "ㅕ", "ㅇ"], ["ㅎ", "ㅏ"], ["ㅅ", "ㅔ"], ["ㅇ", "ㅛ"]]
 console.log(text.getChoseong()); // "ㅇㄴㅎㅅㅇ"
+console.log(text.containsChoseong("ㅇㄴㅎ")); // true
+console.log(text.findChoseong("ㅎㅅ")); // { start: 2, end: 4, byteStart, byteEnd }
 console.log(text.length); // 5
 console.log(text.get(0)); // { original: "안", isHangul: true, choseong: "ㅇ", jungseong: "ㅏ", jongseong: "ㄴ" }
 
@@ -159,6 +164,8 @@ import init, {
   josa,
   josaParticle,
   unitAt,
+  containsChoseong,
+  findChoseong,
 } from "./wasm/pkg/hangul";
 
 await init();
@@ -166,6 +173,8 @@ await init();
 console.log(disassemble("안녕하세요")); // "ㅇㅏㄴㄴㅕㅇㅎㅏㅅㅔㅇㅛ"
 console.log(disassembleToGroups("값")); // [["ㄱ", "ㅏ", "ㅂ", "ㅅ"]]
 console.log(getChoseong("Hello 안녕!")); // "Hello ㅇㄴ!"
+console.log(containsChoseong("한글", "ㅎㄱ")); // true
+console.log(findChoseong("한글", "한ㄱ")); // { start: 0, end: 2, ... }
 console.log(hasBatchim("한")); // true
 console.log(josa("사과", "을/를")); // "사과를"
 console.log(josaParticle("사과", "을/를")); // "를"

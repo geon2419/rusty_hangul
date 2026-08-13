@@ -273,6 +273,26 @@ describe("Hangul class", () => {
 		});
 	});
 
+	describe("choseong search", () => {
+		it("should find choseong and progressive queries", () => {
+			const hangul = new Hangul("한글날");
+			expect(hangul.containsChoseong("ㅎㄱ")).toBe(true);
+			expect(hangul.containsChoseong("ㅎㄴ")).toBe(false);
+			expect(hangul.findChoseong("ㅎ")?.start).toBe(0);
+			expect(hangul.findChoseong("ㅎ")?.end).toBe(1);
+			expect(hangul.findChoseong("한ㄱ")?.end).toBe(2);
+			expect(hangul.findChoseong("한글")?.byteEnd).toBe(
+				new TextEncoder().encode("한글").length,
+			);
+			expect(new Hangul("한글").findChoseong("ㅎㄴ")).toBeNull();
+			expect(new Hangul("한 글").containsChoseong("ㅎㄱ")).toBe(false);
+			expect(new Hangul("꿈").containsChoseong("ㄲ")).toBe(true);
+			expect(new Hangul("꿈").containsChoseong("ㄱ")).toBe(false);
+			expect(new Hangul("과").containsChoseong("고")).toBe(false);
+			expect(new Hangul("Hello").containsChoseong("한")).toBe(false);
+		});
+	});
+
 	describe("assemble function", () => {
 		it("should compose basic and compound syllables", () => {
 			expect(assemble("ㄱㅏ")).toBe("가");

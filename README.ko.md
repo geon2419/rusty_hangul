@@ -9,6 +9,7 @@ Rust로 만든 한글 문자열 처리 라이브러리입니다. 음절 분해, 
 - 한글 음절을 자모로 분해 (NFC / NFD, 그룹 출력 포함)
 - 음절 단위 순회 및 초·중·종성 확인
 - 초성 추출 (한글이 아닌 문자는 그대로 유지)
+- 초성·음절 접두로 검색
 - 받침 확인 및 조사 선택 (조사만 반환하는 API 포함)
 - 자모를 음절로 조립
 
@@ -98,6 +99,8 @@ assert_eq!(
   ]
 );
 assert_eq!(text.get_choseong(), "ㅇㄴㅎㅅㅇ");
+assert!(text.contains_choseong("ㅇㄴㅎ"));
+assert_eq!(text.find_choseong("ㅎㅅ").unwrap().start, 2);
 assert_eq!(text.len(), 5);
 assert!(text.get(0).unwrap().is_hangul());
 
@@ -130,6 +133,8 @@ console.log(text.disassemble()); // "ㅇㅏㄴㄴㅕㅇㅎㅏㅅㅔㅇㅛ"
 console.log(text.disassembleToGroups());
 // [["ㅇ", "ㅏ", "ㄴ"], ["ㄴ", "ㅕ", "ㅇ"], ["ㅎ", "ㅏ"], ["ㅅ", "ㅔ"], ["ㅇ", "ㅛ"]]
 console.log(text.getChoseong()); // "ㅇㄴㅎㅅㅇ"
+console.log(text.containsChoseong("ㅇㄴㅎ")); // true
+console.log(text.findChoseong("ㅎㅅ")); // { start: 2, end: 4, byteStart, byteEnd }
 console.log(text.length); // 5
 console.log(text.get(0)); // { original: "안", isHangul: true, choseong: "ㅇ", jungseong: "ㅏ", jongseong: "ㄴ" }
 
@@ -159,6 +164,8 @@ import init, {
   josa,
   josaParticle,
   unitAt,
+  containsChoseong,
+  findChoseong,
 } from "./wasm/pkg/hangul";
 
 await init();
@@ -166,6 +173,8 @@ await init();
 console.log(disassemble("안녕하세요")); // "ㅇㅏㄴㄴㅕㅇㅎㅏㅅㅔㅇㅛ"
 console.log(disassembleToGroups("값")); // [["ㄱ", "ㅏ", "ㅂ", "ㅅ"]]
 console.log(getChoseong("Hello 안녕!")); // "Hello ㅇㄴ!"
+console.log(containsChoseong("한글", "ㅎㄱ")); // true
+console.log(findChoseong("한글", "한ㄱ")); // { start: 0, end: 2, ... }
 console.log(hasBatchim("한")); // true
 console.log(josa("사과", "을/를")); // "사과를"
 console.log(josaParticle("사과", "을/를")); // "를"
