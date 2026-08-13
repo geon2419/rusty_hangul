@@ -435,5 +435,8 @@ mod tests {
     assert!(Hangul::new("한글".to_string())
       .find_choseong("ㅎㄴ".to_string())
       .is_none());
+    assert!(Hangul::new("꿈".to_string()).contains_choseong("ㄲ".to_string()));
+    assert!(!Hangul::new("꿈".to_string()).contains_choseong("ㄱ".to_string()));
+    assert!(!Hangul::new("과".to_string()).contains_choseong("고".to_string()));
   }
 }

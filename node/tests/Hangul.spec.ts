@@ -286,6 +286,10 @@ describe("Hangul class", () => {
 			);
 			expect(new Hangul("한글").findChoseong("ㅎㄴ")).toBeNull();
 			expect(new Hangul("한 글").containsChoseong("ㅎㄱ")).toBe(false);
+			expect(new Hangul("꿈").containsChoseong("ㄲ")).toBe(true);
+			expect(new Hangul("꿈").containsChoseong("ㄱ")).toBe(false);
+			expect(new Hangul("과").containsChoseong("고")).toBe(false);
+			expect(new Hangul("Hello").containsChoseong("한")).toBe(false);
 		});
 	});
 

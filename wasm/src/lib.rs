@@ -216,6 +216,9 @@ mod tests {
     assert_eq!(found.start, 0);
     assert_eq!(found.end, 2);
     assert!(find_choseong("한글", "ㅎㄴ").is_none());
+    assert!(contains_choseong("꿈", "ㄲ"));
+    assert!(!contains_choseong("꿈", "ㄱ"));
+    assert!(!contains_choseong("과", "고"));
 
     for sample in ["", "값", "가A!", "과", "Hello 안녕!"] {
       let groups = hangul::Hangul::new(sample).disassemble_to_groups();

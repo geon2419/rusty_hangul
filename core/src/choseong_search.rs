@@ -174,4 +174,87 @@ mod tests {
     assert!(text.contains_choseong("값"));
     assert!(!text.contains_choseong("간"));
   }
+
+  fn assert_slice(text: &str, query: &str, expected: &str) {
+    let hangul = Hangul::new(text);
+    let found = hangul.find_choseong(query).expect(query);
+    assert_eq!(
+      &hangul.original()[found.byte_start..found.byte_end],
+      expected,
+      "slice mismatch for {text:?} / {query:?}"
+    );
+    assert_eq!(hangul.contains_choseong(query), true);
+  }
+
+  #[test]
+  fn test_match_byte_range_slices_original() {
+    assert_slice("한글날", "ㅎㄱ", "한글");
+    assert_slice("A한글", "ㅎㄱ", "한글");
+    assert_slice("한글날", "날", "날");
+  }
+
+  #[test]
+  fn test_tense_choseong_does_not_match_plain() {
+    let text = Hangul::new("꿈");
+    assert!(text.contains_choseong("ㄲ"));
+    assert!(text.contains_choseong("꾸"));
+    assert!(!text.contains_choseong("ㄱ"));
+    assert!(!text.contains_choseong("구"));
+    assert!(Hangul::new("가").contains_choseong("ㄱ"));
+    assert!(!Hangul::new("가").contains_choseong("ㄲ"));
+  }
+
+  #[test]
+  fn test_compound_jungseong_is_not_split() {
+    let text = Hangul::new("과");
+    assert!(text.contains_choseong("ㄱ"));
+    assert!(text.contains_choseong("과"));
+    assert!(!text.contains_choseong("고"));
+    assert!(!text.contains_choseong("ㄱㅗ"));
+  }
+
+  #[test]
+  fn test_nfd_query_and_conjoining_choseong() {
+    let nfd_gan = "\u{1100}\u{1161}\u{11AB}";
+    assert!(Hangul::new("간").contains_choseong(nfd_gan));
+    assert!(Hangul::new("한글").contains_choseong("\u{1112}"));
+    assert!(Hangul::new("가").contains_choseong("\u{1100}"));
+    assert_eq!(
+      Hangul::new("가").find_choseong("\u{1100}"),
+      Some(match_at(0, 1, 0, "가".len()))
+    );
+  }
+
+  #[test]
+  fn test_non_hangul_and_vowel_queries() {
+    assert!(!Hangul::new("Hello").contains_choseong("한"));
+    assert!(!Hangul::new("가").contains_choseong("ㅏ"));
+    assert!(Hangul::new("Hello").contains_choseong("ell"));
+    assert!(!Hangul::new("Hello").contains_choseong("ELL"));
+  }
+
+  #[test]
+  fn test_emoji_unit_and_contains_matches_find() {
+    let text = Hangul::new("가🙂나");
+    assert_slice("가🙂나", "ㄱ🙂ㄴ", "가🙂나");
+    assert!(!text.contains_choseong("ㄱㄴ"));
+
+    let samples = [
+      ("한글날", "ㅎㄱ"),
+      ("한글날", "ㅎㄴ"),
+      ("꿈", "ㄱ"),
+      ("과", "고"),
+      ("Hello", "한"),
+      ("", "ㄱ"),
+      ("한글", ""),
+    ];
+    for (text, query) in samples {
+      let hangul = Hangul::new(text);
+      assert_eq!(
+        hangul.contains_choseong(query),
+        hangul.find_choseong(query).is_some(),
+        "{text:?} / {query:?}"
+      );
+    }
+  }
 }
