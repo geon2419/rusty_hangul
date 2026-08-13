@@ -1,33 +1,33 @@
 # rusty_hangul
 
-Hangul string processing in Rust — syllable disassembly, choseong extraction, batchim/josa selection, and jamo assembly — with Node.js and WebAssembly bindings.
+Rust로 만든 한글 문자열 처리 라이브러리입니다. 음절 분해, 초성 추출, 받침·조사 선택, 자모 조립을 제공하고 Node.js·WebAssembly 바인딩을 함께 둡니다.
 
-[한국어](./README.ko.md)
+[English](./README.md)
 
-## Features
+## 기능
 
-- Disassemble Hangul syllables into jamo (NFC and NFD)
-- Extract choseong (initial consonants), leaving non-Hangul characters as-is
-- Detect batchim (final consonants) and select a matching josa
-- Assemble jamo back into syllables
+- 한글 음절을 자모로 분해 (NFC / NFD)
+- 초성 추출 (한글이 아닌 문자는 그대로 유지)
+- 받침 확인 및 조사 선택
+- 자모를 음절로 조립
 
-## Packages
+## 구성
 
-This repository is a Cargo and bun workspace. **Nothing is published to crates.io or npm yet.**
+이 저장소는 Cargo와 bun 워크스페이스입니다. **crates.io와 npm에는 아직 배포되어 있지 않습니다.**
 
-| Path | Package name | Role |
+| 경로 | 패키지 이름 | 역할 |
 | --- | --- | --- |
-| `core/` | `hangul` | Rust crate |
-| `node/` | `node` | Node.js native addon via [napi-rs](https://napi.rs/) |
-| `wasm/` | `wasm` (`hangul-wasm`) | WebAssembly bindings via wasm-bindgen |
+| `core/` | `hangul` | Rust 크레이트 |
+| `node/` | `node` | [napi-rs](https://napi.rs/) Node.js 네이티브 애드온 |
+| `wasm/` | `wasm` (`hangul-wasm`) | wasm-bindgen WebAssembly 바인딩 |
 
-A browser demo lives in [`examples/browser-basic`](./examples/browser-basic).
+브라우저 데모는 [`examples/browser-basic`](./examples/browser-basic)에 있습니다.
 
-## Installation
+## 설치
 
-You need a [Rust toolchain](https://rustup.rs/) and [bun](https://bun.sh/) (`>= 1.3.3`). Node.js bindings require Node `>= 20`. WebAssembly builds also need [`wasm-pack`](https://rustwasm.github.io/wasm-pack/).
+[Rust 툴체인](https://rustup.rs/)과 [bun](https://bun.sh/) (`>= 1.3.3`)이 필요합니다. Node.js 바인딩은 Node `>= 20`이 필요하고, WebAssembly 빌드에는 [`wasm-pack`](https://rustwasm.github.io/wasm-pack/)이 필요합니다.
 
-Clone the repo, then:
+저장소를 클론한 뒤:
 
 ```sh
 bun install
@@ -35,16 +35,16 @@ bun install
 
 ### Rust
 
-The crate name is `hangul`, not `rusty_hangul`.
+크레이트 이름은 `rusty_hangul`이 아니라 `hangul`입니다.
 
-From git:
+git에서:
 
 ```toml
 [dependencies]
 hangul = { git = "https://github.com/geon2419/rusty_hangul" }
 ```
 
-From a local clone:
+로컬 클론에서:
 
 ```toml
 [dependencies]
@@ -53,7 +53,7 @@ hangul = { path = "path/to/rusty_hangul/core" }
 
 ### Node.js
 
-Build the native addon, then import the workspace package named `node`:
+네이티브 애드온을 빌드한 뒤, 워크스페이스 패키지 이름 `node`로 import합니다.
 
 ```sh
 bun run node:build
@@ -63,7 +63,7 @@ bun run node:build
 import { Hangul, assemble } from "node";
 ```
 
-That import works for other packages in this bun workspace. Outside the workspace, point at `./node` after a local build.
+이 import는 이 bun 워크스페이스 안의 다른 패키지에서 동작합니다. 워크스페이스 밖에서는 로컬 빌드 후 `./node`를 가리키면 됩니다.
 
 ### WebAssembly
 
@@ -77,9 +77,9 @@ import init, { disassemble, getChoseong } from "./wasm/pkg/hangul";
 await init();
 ```
 
-Adjust the import path to match your app. See [`examples/browser-basic`](./examples/browser-basic) for a Vite setup.
+앱 구조에 맞게 import 경로를 바꾸면 됩니다. Vite 설정은 [`examples/browser-basic`](./examples/browser-basic)을 참고하세요.
 
-## Rust example
+## Rust 예시
 
 ```rust
 use hangul::{assemble, assemble_with_policy, AssemblePolicy, Hangul};
@@ -105,7 +105,7 @@ assert_eq!(
 );
 ```
 
-## Node.js example
+## Node.js 예시
 
 ```typescript
 import { Hangul, assemble } from "node";
@@ -124,9 +124,9 @@ console.log(assemble("ㄱㅏㅂㅅ")); // "값"
 console.log(assemble("ㄱㅏㄱㅅㅏ", "compound-final")); // "갃ㅏ"
 ```
 
-## WebAssembly example
+## WebAssembly 예시
 
-WASM exposes free functions, not a `Hangul` class.
+WASM은 `Hangul` 클래스가 아니라 함수를 노출합니다.
 
 ```typescript
 import init, {
@@ -146,6 +146,6 @@ console.log(josa("사과", "을/를")); // "사과를"
 console.log(assemble("ㄱㅏㅂㅅ")); // "값"
 ```
 
-## License
+## 라이선스
 
 [MIT](./LICENSE)
