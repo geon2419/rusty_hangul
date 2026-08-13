@@ -1,3 +1,4 @@
+use std::fmt;
 use std::sync::OnceLock;
 
 use crate::choseong::Choseong;
@@ -6,10 +7,50 @@ use crate::jongseong::Jongseong;
 use crate::josa::{JosaError, JosaPair};
 use crate::jungseong::Jungseong;
 
+#[derive(Clone)]
 struct CharUnit {
   original: char,
   hangul: Option<HangulLetter>,
   end_byte: usize,
+}
+
+/// One parsed slot in a [`Hangul`] value: a Hangul syllable or a single other character.
+///
+/// NFD jamo that form one syllable (`ᄀ` + `ᅡ` + `ᆫ`) occupy a single unit.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct HangulUnit<'a> {
+  original: char,
+  letter: Option<&'a HangulLetter>,
+}
+
+impl<'a> HangulUnit<'a> {
+  pub fn original(&self) -> char {
+    self.original
+  }
+
+  pub fn letter(&self) -> Option<&'a HangulLetter> {
+    self.letter
+  }
+
+  pub fn is_hangul(&self) -> bool {
+    self.letter.is_some()
+  }
+
+  pub fn disassembled_chars(&self) -> Vec<char> {
+    match self.letter {
+      Some(letter) => letter.disassembled_chars(),
+      None => vec![self.original],
+    }
+  }
+}
+
+impl CharUnit {
+  fn as_unit(&self) -> HangulUnit<'_> {
+    HangulUnit {
+      original: self.original,
+      letter: self.hangul.as_ref(),
+    }
+  }
 }
 
 pub struct Hangul {
@@ -17,6 +58,7 @@ pub struct Hangul {
   original: String,
   disassembled_cache: OnceLock<String>,
   choseong_cache: OnceLock<String>,
+  groups_cache: OnceLock<Vec<Vec<char>>>,
 }
 
 impl Hangul {
@@ -26,6 +68,7 @@ impl Hangul {
       original: string.to_string(),
       disassembled_cache: OnceLock::new(),
       choseong_cache: OnceLock::new(),
+      groups_cache: OnceLock::new(),
     }
   }
 
@@ -96,6 +139,21 @@ impl Hangul {
     self.char_units.is_empty()
   }
 
+  pub fn get(&self, index: usize) -> Option<HangulUnit<'_>> {
+    self.char_units.get(index).map(CharUnit::as_unit)
+  }
+
+  pub fn units(&self) -> impl ExactSizeIterator<Item = HangulUnit<'_>> + '_ {
+    self.char_units.iter().map(CharUnit::as_unit)
+  }
+
+  pub fn letters(&self) -> impl Iterator<Item = &HangulLetter> + '_ {
+    self
+      .char_units
+      .iter()
+      .filter_map(|unit| unit.hangul.as_ref())
+  }
+
   pub fn disassemble(&self) -> String {
     self
       .disassembled_cache
@@ -110,6 +168,13 @@ impl Hangul {
       .clone()
   }
 
+  pub fn disassemble_to_groups(&self) -> Vec<Vec<char>> {
+    self
+      .groups_cache
+      .get_or_init(|| self.disassemble_to_groups_uncached())
+      .clone()
+  }
+
   pub fn has_batchim(&self) -> bool {
     self
       .last_hangul_letter()
@@ -117,7 +182,7 @@ impl Hangul {
       .unwrap_or(false)
   }
 
-  pub fn josa(&self, pair: &str) -> Result<String, JosaError> {
+  pub fn josa_particle(&self, pair: &str) -> Result<&'static str, JosaError> {
     let pair = JosaPair::parse(pair).ok_or_else(|| JosaError::InvalidPair(pair.to_owned()))?;
     let last_letter = self.last_hangul_letter();
     let has_batchim = last_letter.map(HangulLetter::has_batchim).unwrap_or(false);
@@ -125,7 +190,11 @@ impl Hangul {
       .and_then(|letter| letter.jongseong.as_ref())
       .map(|jongseong| jongseong.compatibility_value == 'ㄹ')
       .unwrap_or(false);
-    let particle = pair.select(has_batchim, has_rieul_batchim);
+    Ok(pair.select(has_batchim, has_rieul_batchim))
+  }
+
+  pub fn josa(&self, pair: &str) -> Result<String, JosaError> {
+    let particle = self.josa_particle(pair)?;
     let insertion = self
       .last_hangul_unit()
       .map(|unit| unit.end_byte)
@@ -184,6 +253,50 @@ impl Hangul {
     }
 
     result
+  }
+
+  fn disassemble_to_groups_uncached(&self) -> Vec<Vec<char>> {
+    self
+      .char_units
+      .iter()
+      .map(|unit| unit.as_unit().disassembled_chars())
+      .collect()
+  }
+}
+
+impl Clone for Hangul {
+  fn clone(&self) -> Self {
+    Self {
+      char_units: self.char_units.clone(),
+      original: self.original.clone(),
+      disassembled_cache: OnceLock::new(),
+      choseong_cache: OnceLock::new(),
+      groups_cache: OnceLock::new(),
+    }
+  }
+}
+
+impl PartialEq for Hangul {
+  fn eq(&self, other: &Self) -> bool {
+    self.original == other.original
+  }
+}
+
+impl Eq for Hangul {}
+
+impl fmt::Display for Hangul {
+  fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+    formatter.write_str(&self.original)
+  }
+}
+
+impl fmt::Debug for Hangul {
+  fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+    formatter
+      .debug_struct("Hangul")
+      .field("original", &self.original)
+      .field("len", &self.len())
+      .finish()
   }
 }
 
@@ -443,6 +556,87 @@ mod tests {
       Hangul::new("수박").josa("이에요/예요").unwrap(),
       "수박이에요"
     );
+    assert_eq!(Hangul::new("사과").josa("아/야").unwrap(), "사과야");
+    assert_eq!(Hangul::new("수박").josa("아/야").unwrap(), "수박아");
+    assert_eq!(Hangul::new("사과").josa("이나/나").unwrap(), "사과나");
+    assert_eq!(Hangul::new("수박").josa("이나/나").unwrap(), "수박이나");
+    assert_eq!(Hangul::new("사과").josa("이란/란").unwrap(), "사과란");
+    assert_eq!(Hangul::new("수박").josa("이란/란").unwrap(), "수박이란");
+    assert_eq!(Hangul::new("사과").josa("이랑/랑").unwrap(), "사과랑");
+    assert_eq!(Hangul::new("수박").josa("이랑/랑").unwrap(), "수박이랑");
+    assert_eq!(Hangul::new("사과").josa("이며/며").unwrap(), "사과며");
+    assert_eq!(Hangul::new("수박").josa("이며/며").unwrap(), "수박이며");
+    assert_eq!(Hangul::new("사과").josa("이야/야").unwrap(), "사과야");
+    assert_eq!(Hangul::new("수박").josa("이야/야").unwrap(), "수박이야");
+    assert_eq!(Hangul::new("사과").josa("이라고/라고").unwrap(), "사과라고");
+    assert_eq!(
+      Hangul::new("수박").josa("이라고/라고").unwrap(),
+      "수박이라고"
+    );
+    assert_eq!(Hangul::new("사과").josa("이든/든").unwrap(), "사과든");
+    assert_eq!(Hangul::new("수박").josa("이든/든").unwrap(), "수박이든");
+  }
+
+  #[test]
+  fn test_josa_aliases_match_canonical_pairs() {
+    let aliases = [
+      ("을/를", "를/을"),
+      ("이/가", "가/이"),
+      ("은/는", "는/은"),
+      ("와/과", "과/와"),
+      ("으로/로", "로/으로"),
+      ("이에요/예요", "예요/이에요"),
+      ("아/야", "야/아"),
+      ("이나/나", "나/이나"),
+      ("이란/란", "란/이란"),
+      ("이랑/랑", "랑/이랑"),
+      ("이며/며", "며/이며"),
+      ("이야/야", "야/이야"),
+      ("이라고/라고", "라고/이라고"),
+      ("이든/든", "든/이든"),
+    ];
+
+    for noun in ["사과", "수박", "서울", "값!"] {
+      for (forward, reverse) in aliases {
+        let hangul = Hangul::new(noun);
+        assert_eq!(
+          hangul.josa(forward).unwrap(),
+          hangul.josa(reverse).unwrap(),
+          "{noun} {forward} vs {reverse}"
+        );
+        assert_eq!(
+          hangul.josa_particle(forward).unwrap(),
+          hangul.josa_particle(reverse).unwrap(),
+          "{noun} particle {forward} vs {reverse}"
+        );
+      }
+    }
+  }
+
+  #[test]
+  fn test_josa_inserts_josa_particle() {
+    let cases = [
+      ("사과", "을/를"),
+      ("수박", "아/야"),
+      ("서울", "으로/로"),
+      ("값!", "이라고/라고"),
+      ("사과?!", "이야/야"),
+      ("Hello", "이/가"),
+    ];
+
+    for (noun, pair) in cases {
+      let hangul = Hangul::new(noun);
+      let particle = hangul.josa_particle(pair).unwrap();
+      let attached = hangul.josa(pair).unwrap();
+      assert!(
+        attached.contains(particle),
+        "{noun} + {pair} should contain {particle}, got {attached}"
+      );
+      assert_eq!(
+        attached.chars().count(),
+        noun.chars().count() + particle.chars().count()
+      );
+    }
   }
 
   #[test]
@@ -655,5 +849,189 @@ mod tests {
     let first = sentence.get_choseong();
     let second = sentence.get_choseong();
     assert_eq!(first, second);
+  }
+
+  #[test]
+  fn test_units_and_get() {
+    let sentence = Hangul::new("가A값");
+    assert_eq!(sentence.len(), 3);
+    assert_eq!(sentence.units().len(), 3);
+
+    let first = sentence.get(0).unwrap();
+    assert!(first.is_hangul());
+    assert_eq!(first.original(), '가');
+    assert_eq!(first.letter().unwrap().choseong.compatibility_value, 'ㄱ');
+    assert_eq!(first.letter().unwrap().jungseong.compatibility_value, 'ㅏ');
+    assert!(first.letter().unwrap().jongseong.is_none());
+    assert_eq!(first.disassembled_chars(), vec!['ㄱ', 'ㅏ']);
+
+    let middle = sentence.get(1).unwrap();
+    assert!(!middle.is_hangul());
+    assert_eq!(middle.original(), 'A');
+    assert!(middle.letter().is_none());
+    assert_eq!(middle.disassembled_chars(), vec!['A']);
+
+    let last = sentence.get(2).unwrap();
+    assert_eq!(last.disassembled_chars(), vec!['ㄱ', 'ㅏ', 'ㅂ', 'ㅅ']);
+    assert!(sentence.get(3).is_none());
+
+    let units: Vec<_> = sentence.units().collect();
+    assert_eq!(units.len(), 3);
+    assert_eq!(sentence.letters().count(), 2);
+
+    let mixed = Hangul::new("가A나");
+    let letters: Vec<_> = mixed.letters().collect();
+    assert_eq!(letters.len(), 2);
+    assert_eq!(letters[0].choseong.compatibility_value, 'ㄱ');
+    assert_eq!(letters[1].choseong.compatibility_value, 'ㄴ');
+  }
+
+  #[test]
+  fn test_units_empty_lone_jamo_and_nfd_original() {
+    let empty = Hangul::new("");
+    assert!(empty.get(0).is_none());
+    assert_eq!(empty.units().len(), 0);
+    assert_eq!(empty.letters().count(), 0);
+
+    let giyeok = Hangul::new("ㄱ");
+    assert_eq!(giyeok.len(), 1);
+    assert!(!giyeok.get(0).unwrap().is_hangul());
+    assert_eq!(giyeok.get(0).unwrap().original(), 'ㄱ');
+    assert_eq!(giyeok.disassemble_to_groups(), vec![vec!['ㄱ']]);
+
+    let vowel = Hangul::new("ㅏ");
+    assert!(!vowel.get(0).unwrap().is_hangul());
+    assert_eq!(vowel.disassemble_to_groups(), vec![vec!['ㅏ']]);
+
+    let nfd = Hangul::new("\u{1100}\u{1161}\u{11AB}");
+    assert_eq!(nfd.len(), 1);
+    let unit = nfd.get(0).unwrap();
+    assert!(unit.is_hangul());
+    assert_eq!(unit.original(), '\u{1100}');
+    assert_eq!(unit.disassembled_chars(), vec!['ㄱ', 'ㅏ', 'ㄴ']);
+  }
+
+  #[test]
+  fn test_units_nfd_is_one_slot() {
+    let nfd = Hangul::new("\u{1100}\u{1161}\u{11AB}");
+    assert_eq!(nfd.len(), 1);
+    let unit = nfd.get(0).unwrap();
+    assert!(unit.is_hangul());
+    assert_eq!(unit.disassembled_chars(), vec!['ㄱ', 'ㅏ', 'ㄴ']);
+  }
+
+  fn flatten_groups(groups: &[Vec<char>]) -> String {
+    groups.iter().flatten().copied().collect()
+  }
+
+  #[test]
+  fn test_disassemble_to_groups() {
+    assert_eq!(
+      Hangul::new("안녕").disassemble_to_groups(),
+      vec![vec!['ㅇ', 'ㅏ', 'ㄴ'], vec!['ㄴ', 'ㅕ', 'ㅇ']]
+    );
+    assert_eq!(
+      Hangul::new("과").disassemble_to_groups(),
+      vec![vec!['ㄱ', 'ㅘ']]
+    );
+    assert_eq!(
+      Hangul::new("값").disassemble_to_groups(),
+      vec![vec!['ㄱ', 'ㅏ', 'ㅂ', 'ㅅ']]
+    );
+    assert_eq!(
+      Hangul::new("가A!").disassemble_to_groups(),
+      vec![vec!['ㄱ', 'ㅏ'], vec!['A'], vec!['!']]
+    );
+    assert_eq!(
+      Hangul::new("").disassemble_to_groups(),
+      Vec::<Vec<char>>::new()
+    );
+    assert_eq!(
+      Hangul::new("가🙂나\n").disassemble_to_groups(),
+      vec![vec!['ㄱ', 'ㅏ'], vec!['🙂'], vec!['ㄴ', 'ㅏ'], vec!['\n']]
+    );
+    assert_eq!(
+      Hangul::new("안녕\t하세요").disassemble_to_groups(),
+      vec![
+        vec!['ㅇ', 'ㅏ', 'ㄴ'],
+        vec!['ㄴ', 'ㅕ', 'ㅇ'],
+        vec!['\t'],
+        vec!['ㅎ', 'ㅏ'],
+        vec!['ㅅ', 'ㅔ'],
+        vec!['ㅇ', 'ㅛ']
+      ]
+    );
+
+    let nfd = Hangul::new("\u{1100}\u{1161}\u{11AB}");
+    assert_eq!(nfd.disassemble_to_groups(), vec![vec!['ㄱ', 'ㅏ', 'ㄴ']]);
+  }
+
+  #[test]
+  fn test_disassemble_to_groups_flattens_to_disassemble() {
+    let samples = [
+      "",
+      "안녕",
+      "과",
+      "값",
+      "Hello 안녕!",
+      "가🙂나\n",
+      "ㄱㅏ",
+      "\u{1100}\u{1161}\u{11AB}",
+    ];
+
+    for sample in samples {
+      let hangul = Hangul::new(sample);
+      assert_eq!(
+        flatten_groups(&hangul.disassemble_to_groups()),
+        hangul.disassemble(),
+        "group flatten mismatch for {sample:?}"
+      );
+    }
+
+    for code in S_BASE..=S_LAST {
+      let syllable = char::from_u32(code).unwrap().to_string();
+      let hangul = Hangul::new(&syllable);
+      assert_eq!(
+        flatten_groups(&hangul.disassemble_to_groups()),
+        hangul.disassemble(),
+        "group flatten mismatch for U+{code:04X} ({syllable})"
+      );
+    }
+  }
+
+  #[test]
+  fn test_disassemble_to_groups_cache_reuse() {
+    let sentence = Hangul::new("값A");
+    let expected = vec![vec!['ㄱ', 'ㅏ', 'ㅂ', 'ㅅ'], vec!['A']];
+    assert_eq!(sentence.disassemble_to_groups(), expected);
+    assert_eq!(sentence.disassemble_to_groups(), expected);
+  }
+
+  #[test]
+  fn test_josa_particle() {
+    assert_eq!(Hangul::new("사과").josa_particle("을/를").unwrap(), "를");
+    assert_eq!(Hangul::new("수박").josa_particle("을/를").unwrap(), "을");
+    assert_eq!(Hangul::new("서울").josa_particle("으로/로").unwrap(), "로");
+    assert_eq!(Hangul::new("값!").josa_particle("을/를").unwrap(), "을");
+    assert_eq!(Hangul::new("Hello").josa_particle("이/가").unwrap(), "가");
+    assert_eq!(Hangul::new("").josa_particle("이/가").unwrap(), "가");
+    assert_eq!(Hangul::new("사과").josa_particle("아/야").unwrap(), "야");
+    assert_eq!(
+      Hangul::new("수박").josa_particle("이라고/라고").unwrap(),
+      "이라고"
+    );
+
+    let error = Hangul::new("사과").josa_particle("을").unwrap_err();
+    assert_eq!(error, JosaError::InvalidPair("을".to_string()));
+  }
+
+  #[test]
+  fn test_clone_eq_display() {
+    let original = Hangul::new("안녕!");
+    let cloned = original.clone();
+    assert_eq!(original, cloned);
+    assert_eq!(cloned.disassemble(), "ㅇㅏㄴㄴㅕㅇ!");
+    assert_eq!(cloned.to_string(), "안녕!");
+    assert_ne!(Hangul::new("안녕"), Hangul::new("안녕!"));
   }
 }

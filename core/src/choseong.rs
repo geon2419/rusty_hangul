@@ -12,7 +12,7 @@ const COMPATIBILITY_CHOSEONG_MAPPING: [u32; 19] = [
   0x3148, 0x3149, 0x314A, 0x314B, 0x314C, 0x314D, 0x314E,
 ];
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Choseong {
   pub conjoining_value: char,
   pub conjoining_unicode: u32,

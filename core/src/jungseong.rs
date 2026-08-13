@@ -14,7 +14,7 @@ const COMPATIBILITY_JUNGSEONG_MAPPING: [u32; 21] = [
   0x315B, 0x315C, 0x315D, 0x315E, 0x315F, 0x3160, 0x3161, 0x3162, 0x3163,
 ];
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Jungseong {
   pub conjoining_value: char,
   pub conjoining_unicode: u32,
