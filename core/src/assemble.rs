@@ -6,7 +6,28 @@ const HANGUL_BASE: u32 = 0xAC00;
 const JUNGSEONG_COUNT: u32 = 21;
 const JONGSEONG_COUNT: u32 = 28;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum AssemblePolicy {
+  #[default]
+  PreferNextSyllable,
+  PreferCompoundFinal,
+}
+
+impl AssemblePolicy {
+  pub fn parse(value: &str) -> Option<Self> {
+    match value {
+      "next-syllable" => Some(Self::PreferNextSyllable),
+      "compound-final" => Some(Self::PreferCompoundFinal),
+      _ => None,
+    }
+  }
+}
+
 pub fn assemble(string: &str) -> String {
+  assemble_with_policy(string, AssemblePolicy::default())
+}
+
+pub fn assemble_with_policy(string: &str, policy: AssemblePolicy) -> String {
   let chars: Vec<char> = string.chars().collect();
   let mut result = String::with_capacity(string.len());
   let mut index = 0;
@@ -48,7 +69,7 @@ pub fn assemble(string: &str) -> String {
                   .and_then(|ch| Jungseong::compatibility_index(*ch))
                   .is_some();
 
-              if second_starts_syllable {
+              if second_starts_syllable && policy == AssemblePolicy::PreferNextSyllable {
                 jongseong_index = candidate_index;
                 consumed = 3;
               } else {
@@ -132,6 +153,31 @@ mod tests {
     assert_eq!(assemble("ㄱㅏㅂㅅㄷㅏ"), "값다");
     assert_eq!(assemble("ㄱㅏㄱㅅㅏ"), "각사");
     assert_eq!(assemble("ㄱㅏㄹㄱㅏ"), "갈가");
+  }
+
+  #[test]
+  fn test_assemble_policies() {
+    let input = "ㄱㅏㄱㅅㅏ";
+
+    assert_eq!(assemble(input), "각사");
+    assert_eq!(
+      assemble_with_policy(input, AssemblePolicy::PreferNextSyllable),
+      "각사"
+    );
+    assert_eq!(
+      assemble_with_policy(input, AssemblePolicy::PreferCompoundFinal),
+      "갃ㅏ"
+    );
+
+    assert_eq!(
+      AssemblePolicy::parse("next-syllable"),
+      Some(AssemblePolicy::PreferNextSyllable)
+    );
+    assert_eq!(
+      AssemblePolicy::parse("compound-final"),
+      Some(AssemblePolicy::PreferCompoundFinal)
+    );
+    assert_eq!(AssemblePolicy::parse("unknown"), None);
   }
 
   #[test]

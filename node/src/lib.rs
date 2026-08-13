@@ -42,8 +42,17 @@ impl Hangul {
 }
 
 #[napi]
-pub fn assemble(text: String) -> String {
-  hangul::assemble(&text)
+pub fn assemble(text: String, policy: Option<String>) -> napi::Result<String> {
+  let policy = match policy.as_deref() {
+    Some(value) => hangul::AssemblePolicy::parse(value).ok_or_else(|| {
+      napi::Error::from_reason(
+        "invalid assemble policy; expected \"next-syllable\" or \"compound-final\"",
+      )
+    })?,
+    None => hangul::AssemblePolicy::default(),
+  };
+
+  Ok(hangul::assemble_with_policy(&text, policy))
 }
 
 #[cfg(test)]
@@ -186,9 +195,27 @@ mod tests {
 
   #[test]
   fn test_assemble() {
-    assert_eq!(assemble("ㄱㅏ".to_string()), "가");
-    assert_eq!(assemble("ㄱㅏㅂㅅ".to_string()), "값");
-    assert_eq!(assemble("ㄱㅏㄱㅏ".to_string()), "가가");
-    assert_eq!(assemble("Hello ㄱㅏ!".to_string()), "Hello 가!");
+    assert_eq!(assemble("ㄱㅏ".to_string(), None).unwrap(), "가");
+    assert_eq!(assemble("ㄱㅏㅂㅅ".to_string(), None).unwrap(), "값");
+    assert_eq!(assemble("ㄱㅏㄱㅏ".to_string(), None).unwrap(), "가가");
+    assert_eq!(
+      assemble("Hello ㄱㅏ!".to_string(), None).unwrap(),
+      "Hello 가!"
+    );
+  }
+
+  #[test]
+  fn test_assemble_policy() {
+    let input = "ㄱㅏㄱㅅㅏ".to_string();
+
+    assert_eq!(
+      assemble(input.clone(), Some("next-syllable".to_string())).unwrap(),
+      "각사"
+    );
+    assert_eq!(
+      assemble(input, Some("compound-final".to_string())).unwrap(),
+      "갃ㅏ"
+    );
+    assert!(assemble("ㄱㅏ".to_string(), Some("unknown".to_string())).is_err());
   }
 }

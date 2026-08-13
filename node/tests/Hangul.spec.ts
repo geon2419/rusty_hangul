@@ -226,5 +226,13 @@ describe("Hangul class", () => {
 			expect(assemble("Hello ㄱㅏ!")).toBe("Hello 가!");
 			expect(assemble("ㄱ")).toBe("ㄱ");
 		});
+
+		it("should allow callers to choose the ambiguity policy", () => {
+			expect(assemble("ㄱㅏㄱㅅㅏ", "next-syllable")).toBe("각사");
+			expect(assemble("ㄱㅏㄱㅅㅏ", "compound-final")).toBe("갃ㅏ");
+			expect(() =>
+				assemble("ㄱㅏ", "unknown" as "next-syllable"),
+			).toThrow();
+		});
 	});
 });

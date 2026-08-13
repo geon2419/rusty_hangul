@@ -8,4 +8,6 @@ export declare class Hangul {
   josa(pair: string): string
 }
 
-export declare function assemble(text: string): string
+export type AssemblePolicy = "next-syllable" | "compound-final"
+
+export declare function assemble(text: string, policy?: AssemblePolicy): string
