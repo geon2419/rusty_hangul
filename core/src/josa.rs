@@ -120,6 +120,41 @@ mod tests {
   }
 
   #[test]
+  fn test_parse_aliases_select_the_same_particle() {
+    let aliases = [
+      ("을/를", "를/을"),
+      ("이/가", "가/이"),
+      ("은/는", "는/은"),
+      ("와/과", "과/와"),
+      ("으로/로", "로/으로"),
+      ("이에요/예요", "예요/이에요"),
+      ("아/야", "야/아"),
+      ("이나/나", "나/이나"),
+      ("이란/란", "란/이란"),
+      ("이랑/랑", "랑/이랑"),
+      ("이며/며", "며/이며"),
+      ("이야/야", "야/이야"),
+      ("이라고/라고", "라고/이라고"),
+      ("이든/든", "든/이든"),
+    ];
+
+    for (forward, reverse) in aliases {
+      let parsed_forward = JosaPair::parse(forward).unwrap();
+      let parsed_reverse = JosaPair::parse(reverse).unwrap();
+
+      for has_batchim in [true, false] {
+        for has_rieul in [true, false] {
+          assert_eq!(
+            parsed_forward.select(has_batchim, has_rieul),
+            parsed_reverse.select(has_batchim, has_rieul),
+            "{forward} vs {reverse} for batchim={has_batchim}, rieul={has_rieul}"
+          );
+        }
+      }
+    }
+  }
+
+  #[test]
   fn test_select_pairs() {
     assert_eq!(JosaPair::EulReul.select(true, false), "을");
     assert_eq!(JosaPair::EulReul.select(false, false), "를");

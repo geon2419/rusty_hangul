@@ -360,9 +360,15 @@ mod tests {
     );
     assert_eq!(
       Hangul::new("사과".to_string())
-        .josa("이라고/라고".to_string())
+        .josa("라고/이라고".to_string())
         .unwrap(),
       "사과라고"
+    );
+    assert_eq!(
+      Hangul::new("값!".to_string())
+        .josa("아/야".to_string())
+        .unwrap(),
+      "값아!"
     );
     assert!(Hangul::new("사과".to_string())
       .josa_particle("을".to_string())

@@ -164,12 +164,53 @@ mod tests {
 
   fn assert_new_surface() {
     assert_eq!(hangul_len("가A값"), 3);
+    assert!(unit_at("", 0).is_none());
+
     let first = unit_at("가A값", 0).unwrap();
     assert!(first.is_hangul);
     assert_eq!(first.choseong.as_deref(), Some("ㄱ"));
     assert!(unit_at("가A값", 3).is_none());
+
+    let other = unit_at("ㄱ", 0).unwrap();
+    assert!(!other.is_hangul);
+    assert_eq!(other.original, "ㄱ");
+
     assert_eq!(josa_particle("사과", "을/를").unwrap(), "를");
+    assert_eq!(josa_particle("사과", "를/을").unwrap(), "를");
     assert_eq!(josa("수박", "아/야").unwrap(), "수박아");
+    assert_eq!(josa("수박", "야/아").unwrap(), "수박아");
+    assert_eq!(josa("값!", "이라고/라고").unwrap(), "값이라고!");
+
+    for sample in ["", "값", "가A!", "과", "Hello 안녕!"] {
+      let groups = hangul::Hangul::new(sample).disassemble_to_groups();
+      let flat: String = groups.iter().flatten().collect();
+      assert_eq!(flat, hangul::Hangul::new(sample).disassemble());
+    }
+  }
+
+  #[cfg(target_arch = "wasm32")]
+  fn assert_js_groups_match_core(text: &str) {
+    use wasm_bindgen::JsCast;
+
+    let expected = hangul::Hangul::new(text).disassemble_to_groups();
+    let js_groups = disassemble_to_groups(text);
+    assert_eq!(js_groups.length() as usize, expected.len());
+
+    for (index, group) in expected.iter().enumerate() {
+      let inner = js_groups
+        .get(index as u32)
+        .dyn_into::<Array>()
+        .expect("group should be an array");
+      assert_eq!(inner.length() as usize, group.len());
+
+      for (jamo_index, ch) in group.iter().enumerate() {
+        let expected = ch.to_string();
+        assert_eq!(
+          inner.get(jamo_index as u32).as_string().as_deref(),
+          Some(expected.as_str())
+        );
+      }
+    }
   }
 
   #[test]
@@ -181,6 +222,9 @@ mod tests {
   #[wasm_bindgen_test::wasm_bindgen_test]
   fn test_units_groups_and_josa_particle_in_wasm_runtime() {
     assert_new_surface();
-    assert_eq!(disassemble_to_groups("값").length(), 1);
+    assert_js_groups_match_core("값");
+    assert_js_groups_match_core("가A!");
+    assert_js_groups_match_core("과");
+    assert_js_groups_match_core("");
   }
 }
