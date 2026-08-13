@@ -211,6 +211,47 @@ describe("Hangul class", () => {
 			);
 			expect(() => new Hangul("사과").josa("을")).toThrow();
 		});
+
+		it("should select additional pairs and return the particle alone", () => {
+			expect(new Hangul("사과").josa("아/야")).toBe("사과야");
+			expect(new Hangul("수박").josa("아/야")).toBe("수박아");
+			expect(new Hangul("사과").josa("이라고/라고")).toBe("사과라고");
+			expect(new Hangul("수박").josaParticle("을/를")).toBe("을");
+			expect(new Hangul("사과").josaParticle("를/을")).toBe("를");
+			expect(() => new Hangul("사과").josaParticle("을")).toThrow();
+		});
+	});
+
+	describe("units and grouped disassembly", () => {
+		it("should expose syllable units", () => {
+			const hangul = new Hangul("가A값");
+
+			expect(hangul.length).toBe(3);
+			expect(hangul.get(0)?.original).toBe("가");
+			expect(hangul.get(0)?.isHangul).toBe(true);
+			expect(hangul.get(0)?.choseong).toBe("ㄱ");
+			expect(hangul.get(0)?.jungseong).toBe("ㅏ");
+			expect(hangul.get(0)?.jongseong).toBeNull();
+			expect(hangul.get(1)?.original).toBe("A");
+			expect(hangul.get(1)?.isHangul).toBe(false);
+			expect(hangul.get(2)?.jongseong).toBe("ㅄ");
+			expect(hangul.get(3)).toBeNull();
+		});
+
+		it("should disassemble into groups", () => {
+			expect(new Hangul("안녕").disassembleToGroups()).toEqual([
+				["ㅇ", "ㅏ", "ㄴ"],
+				["ㄴ", "ㅕ", "ㅇ"],
+			]);
+			expect(new Hangul("값").disassembleToGroups()).toEqual([
+				["ㄱ", "ㅏ", "ㅂ", "ㅅ"],
+			]);
+			expect(new Hangul("가A!").disassembleToGroups()).toEqual([
+				["ㄱ", "ㅏ"],
+				["A"],
+				["!"],
+			]);
+		});
 	});
 
 	describe("assemble function", () => {

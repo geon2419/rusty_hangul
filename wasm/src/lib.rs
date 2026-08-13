@@ -1,9 +1,15 @@
 use hangul::Hangul;
+use js_sys::Array;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(js_name = disassemble)]
 pub fn disassemble(text: &str) -> String {
   Hangul::new(text).disassemble()
+}
+
+#[wasm_bindgen(js_name = disassembleToGroups)]
+pub fn disassemble_to_groups(text: &str) -> Array {
+  groups_to_js(Hangul::new(text).disassemble_to_groups())
 }
 
 #[wasm_bindgen(js_name = getChoseong)]
@@ -23,6 +29,24 @@ pub fn josa(text: &str, pair: &str) -> Result<String, JsValue> {
     .map_err(|error| JsValue::from_str(&error.to_string()))
 }
 
+#[wasm_bindgen(js_name = josaParticle)]
+pub fn josa_particle(text: &str, pair: &str) -> Result<String, JsValue> {
+  Hangul::new(text)
+    .josa_particle(pair)
+    .map(str::to_string)
+    .map_err(|error| JsValue::from_str(&error.to_string()))
+}
+
+#[wasm_bindgen(js_name = hangulLen)]
+pub fn hangul_len(text: &str) -> usize {
+  Hangul::new(text).len()
+}
+
+#[wasm_bindgen(js_name = unitAt)]
+pub fn unit_at(text: &str, index: usize) -> Option<HangulCharUnit> {
+  Hangul::new(text).get(index).map(unit_to_js)
+}
+
 #[wasm_bindgen(js_name = assemble)]
 pub fn assemble(text: &str, policy: Option<String>) -> Result<String, JsValue> {
   let policy = match policy.as_deref() {
@@ -33,6 +57,51 @@ pub fn assemble(text: &str, policy: Option<String>) -> Result<String, JsValue> {
   };
 
   Ok(hangul::assemble_with_policy(text, policy))
+}
+
+#[wasm_bindgen(getter_with_clone)]
+pub struct HangulCharUnit {
+  pub original: String,
+  pub is_hangul: bool,
+  pub choseong: Option<String>,
+  pub jungseong: Option<String>,
+  pub jongseong: Option<String>,
+}
+
+fn unit_to_js(unit: hangul::HangulUnit<'_>) -> HangulCharUnit {
+  match unit.letter() {
+    Some(letter) => HangulCharUnit {
+      original: unit.original().to_string(),
+      is_hangul: true,
+      choseong: Some(letter.choseong.compatibility_value.to_string()),
+      jungseong: Some(letter.jungseong.compatibility_value.to_string()),
+      jongseong: letter
+        .jongseong
+        .as_ref()
+        .map(|jongseong| jongseong.compatibility_value.to_string()),
+    },
+    None => HangulCharUnit {
+      original: unit.original().to_string(),
+      is_hangul: false,
+      choseong: None,
+      jungseong: None,
+      jongseong: None,
+    },
+  }
+}
+
+fn groups_to_js(groups: Vec<Vec<char>>) -> Array {
+  let result = Array::new();
+
+  for group in groups {
+    let inner = Array::new();
+    for ch in group {
+      inner.push(&JsValue::from_str(&ch.to_string()));
+    }
+    result.push(&inner);
+  }
+
+  result
 }
 
 #[cfg(test)]
@@ -91,5 +160,27 @@ mod tests {
   #[wasm_bindgen_test::wasm_bindgen_test]
   fn test_assemble_rejects_unknown_policy() {
     assert!(assemble("ㄱㅏ", Some("unknown".to_string())).is_err());
+  }
+
+  fn assert_new_surface() {
+    assert_eq!(hangul_len("가A값"), 3);
+    let first = unit_at("가A값", 0).unwrap();
+    assert!(first.is_hangul);
+    assert_eq!(first.choseong.as_deref(), Some("ㄱ"));
+    assert!(unit_at("가A값", 3).is_none());
+    assert_eq!(josa_particle("사과", "을/를").unwrap(), "를");
+    assert_eq!(josa("수박", "아/야").unwrap(), "수박아");
+  }
+
+  #[test]
+  fn test_units_groups_and_josa_particle() {
+    assert_new_surface();
+  }
+
+  #[cfg(target_arch = "wasm32")]
+  #[wasm_bindgen_test::wasm_bindgen_test]
+  fn test_units_groups_and_josa_particle_in_wasm_runtime() {
+    assert_new_surface();
+    assert_eq!(disassemble_to_groups("값").length(), 1);
   }
 }

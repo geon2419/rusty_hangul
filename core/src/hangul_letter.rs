@@ -4,6 +4,7 @@ use crate::jungseong::Jungseong;
 use crate::nfc::NFC;
 use crate::nfd::NFD;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct HangulLetter {
   value_chars: [char; 3],
   unicode_codes: [u32; 3],
@@ -109,12 +110,24 @@ impl HangulLetter {
   }
 
   pub fn append_disassembled(&self, output: &mut String) {
+    for ch in self.disassembled_chars() {
+      output.push(ch);
+    }
+  }
+
+  pub fn push_disassembled_chars(&self, output: &mut Vec<char>) {
     output.push(self.choseong.compatibility_value);
     output.push(self.jungseong.compatibility_value);
 
     if let Some(ref jong) = self.jongseong {
-      jong.append_disassembled(output);
+      output.extend(jong.decompose_complex_jongseong());
     }
+  }
+
+  pub fn disassembled_chars(&self) -> Vec<char> {
+    let mut chars = Vec::with_capacity(4);
+    self.push_disassembled_chars(&mut chars);
+    chars
   }
 
   pub fn disassemble(&self) -> String {
@@ -245,6 +258,7 @@ mod tests {
     let hangul = HangulLetter::parse("값").unwrap();
     hangul.append_disassembled(&mut output);
     assert_eq!(output, "Yㄱㅏㅂㅅ");
+    assert_eq!(hangul.disassembled_chars(), vec!['ㄱ', 'ㅏ', 'ㅂ', 'ㅅ']);
   }
 
   #[test]

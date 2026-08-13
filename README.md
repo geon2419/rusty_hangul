@@ -6,9 +6,10 @@ Hangul string processing in Rust — syllable disassembly, choseong extraction, 
 
 ## Features
 
-- Disassemble Hangul syllables into jamo (NFC and NFD)
+- Disassemble Hangul syllables into jamo (NFC and NFD), including grouped output
+- Iterate syllables and inspect choseong / jungseong / jongseong
 - Extract choseong (initial consonants), leaving non-Hangul characters as-is
-- Detect batchim (final consonants) and select a matching josa
+- Detect batchim (final consonants) and select a matching josa (or the particle alone)
 - Assemble jamo back into syllables
 
 ## Packages
@@ -86,7 +87,19 @@ use hangul::{assemble, assemble_with_policy, AssemblePolicy, Hangul};
 
 let text = Hangul::new("안녕하세요");
 assert_eq!(text.disassemble(), "ㅇㅏㄴㄴㅕㅇㅎㅏㅅㅔㅇㅛ");
+assert_eq!(
+  text.disassemble_to_groups(),
+  vec![
+    vec!['ㅇ', 'ㅏ', 'ㄴ'],
+    vec!['ㄴ', 'ㅕ', 'ㅇ'],
+    vec!['ㅎ', 'ㅏ'],
+    vec!['ㅅ', 'ㅔ'],
+    vec!['ㅇ', 'ㅛ'],
+  ]
+);
 assert_eq!(text.get_choseong(), "ㅇㄴㅎㅅㅇ");
+assert_eq!(text.len(), 5);
+assert!(text.get(0).unwrap().is_hangul());
 
 let mixed = Hangul::new("Hello 안녕!");
 assert_eq!(mixed.get_choseong(), "Hello ㅇㄴ!");
@@ -97,6 +110,8 @@ assert_eq!(nfd.disassemble(), "ㄱㅏㄴ");
 assert!(!Hangul::new("사과").has_batchim());
 assert_eq!(Hangul::new("사과").josa("을/를").unwrap(), "사과를");
 assert_eq!(Hangul::new("수박").josa("을/를").unwrap(), "수박을");
+assert_eq!(Hangul::new("수박").josa("아/야").unwrap(), "수박아");
+assert_eq!(Hangul::new("사과").josa_particle("을/를").unwrap(), "를");
 
 assert_eq!(assemble("ㄱㅏㅂㅅ"), "값");
 assert_eq!(
@@ -112,13 +127,19 @@ import { Hangul, assemble } from "node";
 
 const text = new Hangul("안녕하세요");
 console.log(text.disassemble()); // "ㅇㅏㄴㄴㅕㅇㅎㅏㅅㅔㅇㅛ"
+console.log(text.disassembleToGroups());
+// [["ㅇ", "ㅏ", "ㄴ"], ["ㄴ", "ㅕ", "ㅇ"], ["ㅎ", "ㅏ"], ["ㅅ", "ㅔ"], ["ㅇ", "ㅛ"]]
 console.log(text.getChoseong()); // "ㅇㄴㅎㅅㅇ"
+console.log(text.length); // 5
+console.log(text.get(0)); // { original: "안", isHangul: true, choseong: "ㅇ", jungseong: "ㅏ", jongseong: "ㄴ" }
 
 const mixed = new Hangul("Hello 안녕!");
 console.log(mixed.getChoseong()); // "Hello ㅇㄴ!"
 
 console.log(new Hangul("한").hasBatchim()); // true
 console.log(new Hangul("사과").josa("을/를")); // "사과를"
+console.log(new Hangul("수박").josa("아/야")); // "수박아"
+console.log(new Hangul("사과").josaParticle("을/를")); // "를"
 
 console.log(assemble("ㄱㅏㅂㅅ")); // "값"
 console.log(assemble("ㄱㅏㄱㅅㅏ", "compound-final")); // "갃ㅏ"
@@ -132,17 +153,23 @@ WASM exposes free functions, not a `Hangul` class.
 import init, {
   assemble,
   disassemble,
+  disassembleToGroups,
   getChoseong,
   hasBatchim,
   josa,
+  josaParticle,
+  unitAt,
 } from "./wasm/pkg/hangul";
 
 await init();
 
 console.log(disassemble("안녕하세요")); // "ㅇㅏㄴㄴㅕㅇㅎㅏㅅㅔㅇㅛ"
+console.log(disassembleToGroups("값")); // [["ㄱ", "ㅏ", "ㅂ", "ㅅ"]]
 console.log(getChoseong("Hello 안녕!")); // "Hello ㅇㄴ!"
 console.log(hasBatchim("한")); // true
 console.log(josa("사과", "을/를")); // "사과를"
+console.log(josaParticle("사과", "을/를")); // "를"
+console.log(unitAt("가A", 1)); // { original: "A", isHangul: false, ... }
 console.log(assemble("ㄱㅏㅂㅅ")); // "값"
 ```
 

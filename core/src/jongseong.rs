@@ -18,7 +18,7 @@ const COMPLEX_JONGSEONG_MAPPING: [u32; 11] = [
   0x3133, 0x3135, 0x3136, 0x313A, 0x313B, 0x313C, 0x313D, 0x313E, 0x313F, 0x3140, 0x3144,
 ];
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Jongseong {
   pub conjoining_value: char,
   pub conjoining_unicode: u32,
