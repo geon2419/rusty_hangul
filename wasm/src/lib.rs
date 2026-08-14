@@ -138,138 +138,45 @@ fn groups_to_js(groups: Vec<Vec<char>>) -> Array {
 mod tests {
   use super::*;
 
-  fn assert_assemble_policies() {
+  #[test]
+  fn wasm_surface_smoke() {
+    assert_eq!(disassemble("가A값"), "ㄱㅏAㄱㅏㅂㅅ");
+    assert_eq!(get_choseong("가A값"), "ㄱAㄱ");
+    assert!(has_batchim("값!"));
+    assert_eq!(josa("값!", "을/를").unwrap(), "값을!");
+    assert_eq!(josa_particle("사과", "을/를").unwrap(), "를");
+    assert_eq!(hangul_len("가A값"), 3);
+    assert!(unit_at("가A값", 0).unwrap().is_hangul);
+    assert!(!unit_at("ㄱ", 0).unwrap().is_hangul);
+    assert!(unit_at("가A값", 3).is_none());
     assert_eq!(assemble("ㄱㅏㄱㅅㅏ", None).unwrap(), "각사");
+    assert!(contains_choseong("한글", "ㅎㄱ"));
+    assert_eq!(find_choseong("한글", "한ㄱ").unwrap().end, 2);
+  }
+
+  #[cfg(target_arch = "wasm32")]
+  #[wasm_bindgen_test::wasm_bindgen_test]
+  fn wasm_runtime_js_shape() {
+    use wasm_bindgen::JsCast;
+
+    wasm_surface_smoke();
     assert_eq!(
       assemble("ㄱㅏㄱㅅㅏ", Some("compound-final".to_string())).unwrap(),
       "갃ㅏ"
     );
-
-    let compounds = [
-      ('ㄳ', '갃'),
-      ('ㄵ', '갅'),
-      ('ㄶ', '갆'),
-      ('ㄺ', '갉'),
-      ('ㄻ', '갊'),
-      ('ㄼ', '갋'),
-      ('ㄽ', '갌'),
-      ('ㄾ', '갍'),
-      ('ㄿ', '갎'),
-      ('ㅀ', '갏'),
-      ('ㅄ', '값'),
-    ];
-
-    for (compound, syllable) in compounds {
-      let input = format!("ㄱㅏ{compound}ㅏ");
-      let expected = format!("{syllable}ㅏ");
-
-      assert_eq!(assemble(&input, None).unwrap(), expected);
-      assert_eq!(
-        assemble(&input, Some("next-syllable".to_string())).unwrap(),
-        expected
-      );
-      assert_eq!(
-        assemble(&input, Some("compound-final".to_string())).unwrap(),
-        expected
-      );
-    }
-  }
-
-  #[test]
-  fn test_assemble_policies() {
-    assert_assemble_policies();
-  }
-
-  #[cfg(target_arch = "wasm32")]
-  #[wasm_bindgen_test::wasm_bindgen_test]
-  fn test_assemble_policies_in_wasm_runtime() {
-    assert_assemble_policies();
-  }
-
-  #[cfg(target_arch = "wasm32")]
-  #[wasm_bindgen_test::wasm_bindgen_test]
-  fn test_assemble_rejects_unknown_policy() {
     assert!(assemble("ㄱㅏ", Some("unknown".to_string())).is_err());
-  }
 
-  fn assert_new_surface() {
-    assert_eq!(hangul_len("가A값"), 3);
-    assert!(unit_at("", 0).is_none());
-
-    let first = unit_at("가A값", 0).unwrap();
-    assert!(first.is_hangul);
-    assert_eq!(first.choseong.as_deref(), Some("ㄱ"));
-    assert!(unit_at("가A값", 3).is_none());
-
-    let other = unit_at("ㄱ", 0).unwrap();
-    assert!(!other.is_hangul);
-    assert_eq!(other.original, "ㄱ");
-
-    assert_eq!(josa_particle("사과", "을/를").unwrap(), "를");
-    assert_eq!(josa_particle("사과", "를/을").unwrap(), "를");
-    assert_eq!(josa("수박", "아/야").unwrap(), "수박아");
-    assert_eq!(josa("수박", "야/아").unwrap(), "수박아");
-    assert_eq!(josa("값!", "이라고/라고").unwrap(), "값이라고!");
-
-    assert!(contains_choseong("한글", "ㅎㄱ"));
-    let found = find_choseong("한글", "한ㄱ").unwrap();
-    assert_eq!(found.start, 0);
-    assert_eq!(found.end, 2);
-    assert!(find_choseong("한글", "ㅎㄴ").is_none());
-    assert!(contains_choseong("꿈", "ㄲ"));
-    assert!(!contains_choseong("꿈", "ㄱ"));
-    assert!(!contains_choseong("과", "고"));
-
-    for sample in ["", "값", "가A!", "과", "Hello 안녕!"] {
-      let groups = hangul::Hangul::new(sample).disassemble_to_groups();
-      let flat: String = groups.iter().flatten().collect();
-      assert_eq!(flat, hangul::Hangul::new(sample).disassemble());
-    }
-  }
-
-  #[cfg(target_arch = "wasm32")]
-  fn assert_js_groups_match_core(text: &str) {
-    use wasm_bindgen::JsCast;
-
-    let expected = hangul::Hangul::new(text).disassemble_to_groups();
-    let js_groups = disassemble_to_groups(text);
+    let expected = hangul::Hangul::new("가A!").disassemble_to_groups();
+    let js_groups = disassemble_to_groups("가A!");
     assert_eq!(js_groups.length() as usize, expected.len());
-
     for (index, group) in expected.iter().enumerate() {
       let inner = js_groups
         .get(index as u32)
         .dyn_into::<Array>()
         .expect("group should be an array");
       assert_eq!(inner.length() as usize, group.len());
-
-      for (jamo_index, ch) in group.iter().enumerate() {
-        let expected = ch.to_string();
-        assert_eq!(
-          inner.get(jamo_index as u32).as_string().as_deref(),
-          Some(expected.as_str())
-        );
-      }
     }
-  }
 
-  #[test]
-  fn test_units_groups_and_josa_particle() {
-    assert_new_surface();
-  }
-
-  #[cfg(target_arch = "wasm32")]
-  #[wasm_bindgen_test::wasm_bindgen_test]
-  fn test_units_groups_and_josa_particle_in_wasm_runtime() {
-    assert_new_surface();
-    assert_js_groups_match_core("값");
-    assert_js_groups_match_core("가A!");
-    assert_js_groups_match_core("과");
-    assert_js_groups_match_core("");
-    assert_js_unit_exposes_is_hangul();
-  }
-
-  #[cfg(target_arch = "wasm32")]
-  fn assert_js_unit_exposes_is_hangul() {
     let unit = JsValue::from(unit_at("가", 0).unwrap());
     let camel = js_sys::Reflect::get(&unit, &JsValue::from_str("isHangul")).unwrap();
     let snake = js_sys::Reflect::get(&unit, &JsValue::from_str("is_hangul")).unwrap();

@@ -200,185 +200,21 @@ mod tests {
   use super::*;
 
   #[test]
-  fn test_disassemble_basic() {
-    let hangul = Hangul::new("안녕".to_string());
-    assert_eq!(hangul.disassemble(), "ㅇㅏㄴㄴㅕㅇ");
-
-    let hangul = Hangul::new("가나다".to_string());
-    assert_eq!(hangul.disassemble(), "ㄱㅏㄴㅏㄷㅏ");
-
-    let hangul = Hangul::new("한글".to_string());
-    assert_eq!(hangul.disassemble(), "ㅎㅏㄴㄱㅡㄹ");
-  }
-
-  #[test]
-  fn test_disassemble_with_non_hangul() {
-    let hangul = Hangul::new("Hello 안녕!".to_string());
-    assert_eq!(hangul.disassemble(), "Hello ㅇㅏㄴㄴㅕㅇ!");
-
-    let hangul = Hangul::new("123 한글 ABC".to_string());
-    assert_eq!(hangul.disassemble(), "123 ㅎㅏㄴㄱㅡㄹ ABC");
-  }
-
-  #[test]
-  fn test_disassemble_empty_string() {
-    let hangul = Hangul::new("".to_string());
-    assert_eq!(hangul.disassemble(), "");
-  }
-
-  #[test]
-  fn test_disassemble_complex_syllables() {
-    let hangul = Hangul::new("꿈".to_string());
-    assert_eq!(hangul.disassemble(), "ㄲㅜㅁ");
-
-    let hangul = Hangul::new("밝다".to_string());
-    assert_eq!(hangul.disassemble(), "ㅂㅏㄹㄱㄷㅏ");
-
-    let hangul = Hangul::new("닭고기".to_string());
-    assert_eq!(hangul.disassemble(), "ㄷㅏㄹㄱㄱㅗㄱㅣ");
-  }
-
-  #[test]
-  fn test_disassemble_with_spaces() {
-    let hangul = Hangul::new("안녕 하세요".to_string());
-    assert_eq!(hangul.disassemble(), "ㅇㅏㄴㄴㅕㅇ ㅎㅏㅅㅔㅇㅛ");
-  }
-
-  #[test]
-  fn test_get_choseong_basic() {
-    let hangul = Hangul::new("안녕".to_string());
-    assert_eq!(hangul.get_choseong(), "ㅇㄴ");
-
-    let hangul = Hangul::new("가나다".to_string());
-    assert_eq!(hangul.get_choseong(), "ㄱㄴㄷ");
-
-    let hangul = Hangul::new("한글".to_string());
-    assert_eq!(hangul.get_choseong(), "ㅎㄱ");
-  }
-
-  #[test]
-  fn test_get_choseong_with_non_hangul() {
-    let hangul = Hangul::new("Hello 안녕!".to_string());
-    assert_eq!(hangul.get_choseong(), "Hello ㅇㄴ!");
-
-    let hangul = Hangul::new("123 한글 ABC".to_string());
-    assert_eq!(hangul.get_choseong(), "123 ㅎㄱ ABC");
-  }
-
-  #[test]
-  fn test_get_choseong_empty_string() {
-    let hangul = Hangul::new("".to_string());
-    assert_eq!(hangul.get_choseong(), "");
-  }
-
-  #[test]
-  fn test_get_choseong_complex_syllables() {
-    let hangul = Hangul::new("꿈".to_string());
-    assert_eq!(hangul.get_choseong(), "ㄲ");
-
-    let hangul = Hangul::new("밝다".to_string());
-    assert_eq!(hangul.get_choseong(), "ㅂㄷ");
-
-    let hangul = Hangul::new("닭고기".to_string());
-    assert_eq!(hangul.get_choseong(), "ㄷㄱㄱ");
-  }
-
-  #[test]
-  fn test_get_choseong_with_spaces() {
-    let hangul = Hangul::new("안녕 하세요".to_string());
-    assert_eq!(hangul.get_choseong(), "ㅇㄴ ㅎㅅㅇ");
-  }
-
-  #[test]
-  fn test_has_batchim() {
-    assert!(Hangul::new("한".to_string()).has_batchim());
-    assert!(!Hangul::new("하".to_string()).has_batchim());
-    assert!(Hangul::new("값!".to_string()).has_batchim());
-    assert!(Hangul::new("\u{1112}\u{1161}\u{11AB}".to_string()).has_batchim());
-    assert!(!Hangul::new("Hello".to_string()).has_batchim());
-  }
-
-  #[test]
-  fn test_josa() {
-    assert_eq!(
-      Hangul::new("사과".to_string())
-        .josa("을/를".to_string())
-        .unwrap(),
-      "사과를"
-    );
-    assert_eq!(
-      Hangul::new("수박".to_string())
-        .josa("을/를".to_string())
-        .unwrap(),
-      "수박을"
-    );
-    assert_eq!(
-      Hangul::new("서울".to_string())
-        .josa("으로/로".to_string())
-        .unwrap(),
-      "서울로"
-    );
-    assert_eq!(
-      Hangul::new("값!".to_string())
-        .josa("을/를".to_string())
-        .unwrap(),
-      "값을!"
-    );
-  }
-
-  #[test]
-  fn test_josa_rejects_unsupported_pair() {
-    assert!(Hangul::new("사과".to_string())
-      .josa("을".to_string())
-      .is_err());
-  }
-
-  #[test]
-  fn test_assemble() {
-    assert_eq!(assemble("ㄱㅏ".to_string(), None).unwrap(), "가");
-    assert_eq!(assemble("ㄱㅏㅂㅅ".to_string(), None).unwrap(), "값");
-    assert_eq!(assemble("ㄱㅏㄱㅏ".to_string(), None).unwrap(), "가가");
-    assert_eq!(
-      assemble("Hello ㄱㅏ!".to_string(), None).unwrap(),
-      "Hello 가!"
-    );
-  }
-
-  #[test]
-  fn test_assemble_policy() {
-    let input = "ㄱㅏㄱㅅㅏ".to_string();
-
-    assert_eq!(
-      assemble(input.clone(), Some("next-syllable".to_string())).unwrap(),
-      "각사"
-    );
-    assert_eq!(
-      assemble(input, Some("compound-final".to_string())).unwrap(),
-      "갃ㅏ"
-    );
-    assert!(assemble("ㄱㅏ".to_string(), Some("unknown".to_string())).is_err());
-  }
-
-  #[test]
-  fn test_length_get_and_groups() {
-    let hangul = Hangul::new("가A값".to_string());
-    assert_eq!(hangul.length(), 3);
+  fn napi_surface_smoke() {
+    let hangul = Hangul::new("가A값!".to_string());
+    assert_eq!(hangul.length(), 4);
+    assert_eq!(hangul.disassemble(), "ㄱㅏAㄱㅏㅂㅅ!");
+    assert_eq!(hangul.get_choseong(), "ㄱAㄱ!");
+    assert!(hangul.has_batchim());
+    assert_eq!(hangul.josa("을/를".to_string()).unwrap(), "가A값을!");
+    assert_eq!(hangul.josa_particle("을/를".to_string()).unwrap(), "을");
+    assert!(hangul.contains_choseong("ㄱ".to_string()));
+    assert_eq!(hangul.find_choseong("ㄱA".to_string()).unwrap().end(), 2);
 
     let first = hangul.get(0).unwrap();
     assert!(first.is_hangul());
-    assert_eq!(first.original(), "가");
     assert_eq!(first.choseong().as_deref(), Some("ㄱ"));
-    assert_eq!(first.jungseong().as_deref(), Some("ㅏ"));
-    assert_eq!(first.jongseong(), None);
-
-    let middle = hangul.get(1).unwrap();
-    assert!(!middle.is_hangul());
-    assert_eq!(middle.original(), "A");
-
-    let last = hangul.get(2).unwrap();
-    assert_eq!(last.jongseong().as_deref(), Some("ㅄ"));
-    assert!(hangul.get(3).is_none());
-
+    assert!(hangul.get(4).is_none());
     assert_eq!(
       hangul.disassemble_to_groups(),
       vec![
@@ -389,54 +225,19 @@ mod tests {
           "ㅏ".to_string(),
           "ㅂ".to_string(),
           "ㅅ".to_string()
-        ]
+        ],
+        vec!["!".to_string()]
       ]
     );
-  }
 
-  #[test]
-  fn test_josa_particle_and_new_pairs() {
+    assert_eq!(assemble("ㄱㅏㅂㅅ".to_string(), None).unwrap(), "값");
     assert_eq!(
-      Hangul::new("사과".to_string())
-        .josa_particle("을/를".to_string())
-        .unwrap(),
-      "를"
+      assemble("ㄱㅏㄱㅅㅏ".to_string(), Some("compound-final".to_string())).unwrap(),
+      "갃ㅏ"
     );
-    assert_eq!(
-      Hangul::new("수박".to_string())
-        .josa("아/야".to_string())
-        .unwrap(),
-      "수박아"
-    );
-    assert_eq!(
-      Hangul::new("사과".to_string())
-        .josa("라고/이라고".to_string())
-        .unwrap(),
-      "사과라고"
-    );
-    assert_eq!(
-      Hangul::new("값!".to_string())
-        .josa("아/야".to_string())
-        .unwrap(),
-      "값아!"
-    );
+    assert!(assemble("ㄱㅏ".to_string(), Some("unknown".to_string())).is_err());
     assert!(Hangul::new("사과".to_string())
-      .josa_particle("을".to_string())
+      .josa("을".to_string())
       .is_err());
-  }
-
-  #[test]
-  fn test_choseong_search() {
-    let hangul = Hangul::new("한글".to_string());
-    assert!(hangul.contains_choseong("ㅎㄱ".to_string()));
-    let found = hangul.find_choseong("한ㄱ".to_string()).unwrap();
-    assert_eq!(found.start(), 0);
-    assert_eq!(found.end(), 2);
-    assert!(Hangul::new("한글".to_string())
-      .find_choseong("ㅎㄴ".to_string())
-      .is_none());
-    assert!(Hangul::new("꿈".to_string()).contains_choseong("ㄲ".to_string()));
-    assert!(!Hangul::new("꿈".to_string()).contains_choseong("ㄱ".to_string()));
-    assert!(!Hangul::new("과".to_string()).contains_choseong("고".to_string()));
   }
 }

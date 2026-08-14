@@ -8,7 +8,6 @@ mod josa;
 mod jungseong;
 mod nfc;
 mod nfd;
-mod utils;
 
 pub use crate::assemble::{assemble, assemble_with_policy, AssemblePolicy};
 pub use crate::choseong_search::ChoseongMatch;
