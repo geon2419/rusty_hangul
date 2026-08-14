@@ -175,7 +175,7 @@ console.log(assemble("ㄱㅏㅂㅅ")); // "값"
 
 ## AI 코딩 에이전트
 
-토큰을 아끼는 API 맵: [`llms.txt`](./llms.txt).
+API 요약은 [`llms.txt`](./llms.txt)에 있습니다.
 
 ## 라이선스
 

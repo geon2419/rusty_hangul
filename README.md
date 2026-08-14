@@ -175,7 +175,7 @@ console.log(assemble("ㄱㅏㅂㅅ")); // "값"
 
 ## For AI coding agents
 
-Token-efficient API map: [`llms.txt`](./llms.txt).
+See [`llms.txt`](./llms.txt) for a short API overview.
 
 ## License
 
