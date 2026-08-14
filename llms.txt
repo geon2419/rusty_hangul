@@ -1,0 +1,111 @@
+# rusty_hangul
+
+> Hangul string processing in Rust (crate name `hangul`), with Node.js and WebAssembly bindings: syllable disassembly, choseong extraction and search, batchim/josa selection, jamo assembly.
+
+Do not implement josa, choseong search, or jamo assemble/disassemble by hand when this library can be used. This is not a spellchecker, romanizer, morphological analyzer, translator, or HWP document tool.
+
+Human docs: [README.md](./README.md), [README.ko.md](./README.ko.md). Examples: [examples/browser-basic](./examples/browser-basic). Tagged releases: https://github.com/geon2419/rusty_hangul/releases
+
+## Install (v0.1.0)
+
+Rust crate name is `hangul`, not `rusty_hangul`. Not published to crates.io.
+
+```toml
+[dependencies]
+hangul = { git = "https://github.com/geon2419/rusty_hangul", tag = "v0.1.0" }
+```
+
+Local clone: `hangul = { path = "path/to/rusty_hangul/core" }`.
+
+Node (`>= 20`) and WASM need bun `>= 1.3.3`; WASM also needs wasm-pack. Clone the tag, then:
+
+```sh
+bun install
+bun run node:build   # napi-rs addon
+bun run wasm:build
+```
+
+- In this bun workspace: `import { Hangul, assemble } from "node"`
+- Outside the workspace, import the built `./node` package
+- WASM: `import init, { disassemble, getChoseong } from "./wasm/pkg/hangul"` then `await init()`. There is no `Hangul` class; APIs are free functions. See `examples/browser-basic` for Vite.
+
+## Task → API
+
+| Task | Rust | Node | WASM |
+| --- | --- | --- | --- |
+| Wrap text | `Hangul::new(s)` | `new Hangul(s)` | pass `s` to each function |
+| Disassemble to compatibility jamo | `.disassemble()` | `.disassemble()` | `disassemble(s)` |
+| Per-syllable jamo groups | `.disassemble_to_groups()` | `.disassembleToGroups()` | `disassembleToGroups(s)` |
+| Choseong string (non-Hangul kept) | `.get_choseong()` | `.getChoseong()` | `getChoseong(s)` |
+| Choseong / progressive search | `.contains_choseong(q)` / `.find_choseong(q)` | `.containsChoseong(q)` / `.findChoseong(q)` | `containsChoseong(s, q)` / `findChoseong(s, q)` |
+| Last Hangul syllable has batchim | `.has_batchim()` | `.hasBatchim()` | `hasBatchim(s)` |
+| Append matching josa | `.josa("을/를")` | `.josa("을/를")` | `josa(s, "을/를")` |
+| Particle only | `.josa_particle("을/를")` | `.josaParticle("을/를")` | `josaParticle(s, "을/를")` |
+| Syllable/unit count | `.len()` | `.length` | `hangulLen(s)` |
+| Unit at index | `.get(i)` | `.get(i)` | `unitAt(s, i)` |
+| Assemble jamo | `assemble(s)` / `assemble_with_policy(s, policy)` | `assemble(s, policy?)` | `assemble(s, policy?)` |
+
+`len()` / `.length` / `hangulLen` count parsed units (NFC syllable or one NFD jamo cluster), not UTF-8 bytes.
+
+Rust also exports `HangulUnit`, `HangulLetter`, `ChoseongMatch`, `JosaError`, `AssemblePolicy`. Node/WASM units expose `original`, `isHangul`, `choseong`, `jungseong`, `jongseong`.
+
+## Josa
+
+Pass a pair string, not a single particle. Either order is accepted. Unknown pairs error (`JosaError::InvalidPair` in Rust; thrown in Node/WASM).
+
+Supported pairs: `을/를`, `이/가`, `은/는`, `와/과`, `으로/로`, `이에요/예요`, `아/야`, `이나/나`, `이란/란`, `이랑/랑`, `이며/며`, `이야/야`, `이라고/라고`, `이든/든`.
+
+Selection uses the last Hangul syllable. `으로/로` uses `로` when there is no batchim or the batchim is `ㄹ`. The particle is inserted after that syllable, so trailing punctuation stays after the josa (`"사과!".josa("을/를")` → `"사과를!"`). No Hangul in the string is treated as no batchim.
+
+## Choseong search
+
+`find_choseong` / `contains_choseong` match a consecutive run of units. Query units may be:
+
+- compatibility choseong (`ㅎㄱ` matches `한글`)
+- a Hangul syllable prefix (`한ㄱ`, `하ㄱ`, `한글` all match `한글`; `값` matches query `가` / `갑` / `값` but not `간`)
+- the same non-Hangul character (`Aㅎㄱ` matches `A한글`)
+
+Empty query or query longer than the target → no match. Whitespace in the target must appear in the query (`"한 글"` does not contain `"ㅎㄱ"`). Indices `start`/`end` are unit offsets; `byteStart`/`byteEnd` are UTF-8 offsets into the original string.
+
+## Assemble
+
+Default policy is next-syllable (`AssemblePolicy::PreferNextSyllable` / `"next-syllable"`): when a jamo could be a compound batchim or the start of the next syllable, prefer the next syllable. `"compound-final"` / `AssemblePolicy::PreferCompoundFinal` prefers the compound batchim (`assemble_with_policy("ㄱㅏㄱㅅㅏ", PreferCompoundFinal)` → `"갃ㅏ"`).
+
+Input is compatibility jamo (`ㄱㅏㅂㅅ` → `값`). Non-jamo characters pass through.
+
+## Snippets
+
+```rust
+use hangul::{assemble, assemble_with_policy, AssemblePolicy, Hangul};
+
+let text = Hangul::new("안녕하세요");
+assert_eq!(text.disassemble(), "ㅇㅏㄴㄴㅕㅇㅎㅏㅅㅔㅇㅛ");
+assert_eq!(text.get_choseong(), "ㅇㄴㅎㅅㅇ");
+assert!(text.contains_choseong("ㅇㄴㅎ"));
+assert_eq!(text.josa("을/를").unwrap(), "안녕하세요를");
+assert_eq!(assemble("ㄱㅏㅂㅅ"), "값");
+assert_eq!(
+  assemble_with_policy("ㄱㅏㄱㅅㅏ", AssemblePolicy::PreferCompoundFinal),
+  "갃ㅏ"
+);
+```
+
+```ts
+import { Hangul, assemble } from "node";
+
+const text = new Hangul("안녕하세요");
+text.getChoseong(); // "ㅇㄴㅎㅅㅇ"
+text.josa("을/를"); // "안녕하세요를"
+assemble("ㄱㅏㅂㅅ"); // "값"
+assemble("ㄱㅏㄱㅅㅏ", "compound-final"); // "갃ㅏ"
+```
+
+```ts
+import init, { assemble, getChoseong, josa } from "./wasm/pkg/hangul";
+await init();
+getChoseong("Hello 안녕!"); // "Hello ㅇㄴ!"
+josa("사과", "을/를"); // "사과를"
+assemble("ㄱㅏㅂㅅ"); // "값"
+```
+
+NFC and NFD syllables are both parsed as one unit (`Hangul::new("\u{1100}\u{1161}\u{11AB}")` is `간`).
