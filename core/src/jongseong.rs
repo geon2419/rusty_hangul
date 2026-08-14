@@ -13,11 +13,6 @@ const COMPATIBILITY_JONGSEONG_MAPPING: [u32; 27] = [
   0x314C, 0x314D, 0x314E,
 ];
 
-// 복합 종성 매핑 테이블
-const COMPLEX_JONGSEONG_MAPPING: [u32; 11] = [
-  0x3133, 0x3135, 0x3136, 0x313A, 0x313B, 0x313C, 0x313D, 0x313E, 0x313F, 0x3140, 0x3144,
-];
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Jongseong {
   pub conjoining_value: char,
@@ -80,11 +75,6 @@ impl Jongseong {
   }
 
   #[inline]
-  pub fn is_complex_jongseong(&self) -> bool {
-    COMPLEX_JONGSEONG_MAPPING.contains(&self.compatibility_unicode)
-  }
-
-  #[inline]
   pub fn decompose_complex_jongseong(&self) -> Vec<char> {
     match self.compatibility_unicode {
       0x3133 => vec!['ㄱ', 'ㅅ'],
@@ -100,62 +90,6 @@ impl Jongseong {
       0x3144 => vec!['ㅂ', 'ㅅ'],
       _ => vec![self.compatibility_value],
     }
-  }
-
-  #[inline]
-  pub(crate) fn append_decomposed_compatibility(output: &mut String, compatibility_unicode: u32) {
-    match compatibility_unicode {
-      0x3133 => {
-        output.push('ㄱ');
-        output.push('ㅅ');
-      }
-      0x3135 => {
-        output.push('ㄴ');
-        output.push('ㅈ');
-      }
-      0x3136 => {
-        output.push('ㄴ');
-        output.push('ㅎ');
-      }
-      0x313A => {
-        output.push('ㄹ');
-        output.push('ㄱ');
-      }
-      0x313B => {
-        output.push('ㄹ');
-        output.push('ㅁ');
-      }
-      0x313C => {
-        output.push('ㄹ');
-        output.push('ㅂ');
-      }
-      0x313D => {
-        output.push('ㄹ');
-        output.push('ㅅ');
-      }
-      0x313E => {
-        output.push('ㄹ');
-        output.push('ㅌ');
-      }
-      0x313F => {
-        output.push('ㄹ');
-        output.push('ㅍ');
-      }
-      0x3140 => {
-        output.push('ㄹ');
-        output.push('ㅎ');
-      }
-      0x3144 => {
-        output.push('ㅂ');
-        output.push('ㅅ');
-      }
-      _ => output.push(unsafe { std::char::from_u32_unchecked(compatibility_unicode) }),
-    }
-  }
-
-  #[inline]
-  pub fn append_disassembled(&self, output: &mut String) {
-    Self::append_decomposed_compatibility(output, self.compatibility_unicode);
   }
 }
 
@@ -213,25 +147,6 @@ mod tests {
     assert_eq!(jongseong.conjoining_value, 'ᆬ');
     assert_eq!(jongseong.compatibility_unicode, 0x3135);
     assert_eq!(jongseong.compatibility_value, 'ㄵ');
-  }
-
-  #[test]
-  fn test_is_complex_jongseong() {
-    assert!(Jongseong::new(0x3133).is_complex_jongseong());
-    assert!(Jongseong::new(0x3135).is_complex_jongseong());
-    assert!(Jongseong::new(0x3136).is_complex_jongseong());
-    assert!(Jongseong::new(0x313A).is_complex_jongseong());
-    assert!(Jongseong::new(0x313B).is_complex_jongseong());
-    assert!(Jongseong::new(0x313C).is_complex_jongseong());
-    assert!(Jongseong::new(0x313D).is_complex_jongseong());
-    assert!(Jongseong::new(0x313E).is_complex_jongseong());
-    assert!(Jongseong::new(0x313F).is_complex_jongseong());
-    assert!(Jongseong::new(0x3140).is_complex_jongseong());
-    assert!(Jongseong::new(0x3144).is_complex_jongseong());
-
-    assert!(!Jongseong::new(0x3131).is_complex_jongseong());
-    assert!(!Jongseong::new(0x3134).is_complex_jongseong());
-    assert!(!Jongseong::new(0x3139).is_complex_jongseong());
   }
 
   #[test]

@@ -1,5 +1,3 @@
-use crate::utils::is_compatibility_jamo;
-
 // 조합형 중성 범위
 const JUNGSEONG_BASE: u32 = 0x1161;
 const JUNGSEONG_LAST: u32 = 0x1175;
@@ -70,30 +68,6 @@ impl Jungseong {
     COMPAT_JUNGSEONG_BASE <= unicode && unicode <= COMPAT_JUNGSEONG_LAST
   }
 
-  #[inline]
-  pub fn compatibility_to_conjoining_jungseong(compat: u32) -> Option<u32> {
-    if !is_compatibility_jamo(compat) || !Self::is_compatibility_jungseong(compat) {
-      return None;
-    }
-
-    COMPATIBILITY_JUNGSEONG_MAPPING
-      .iter()
-      .position(|&x| x == compat)
-      .map(|i| JUNGSEONG_BASE + i as u32)
-  }
-
-  #[inline]
-  pub fn conjoining_jungseong_to_compatibility(jungseong_code: u32) -> Option<u32> {
-    if !Self::is_conjoining_jungseong(jungseong_code) {
-      return None;
-    }
-
-    let offset = jungseong_code - JUNGSEONG_BASE;
-    COMPATIBILITY_JUNGSEONG_MAPPING
-      .get(offset as usize)
-      .copied()
-  }
-
   pub(crate) fn compatibility_index(ch: char) -> Option<usize> {
     COMPATIBILITY_JUNGSEONG_MAPPING
       .iter()
@@ -129,70 +103,6 @@ mod tests {
     assert!(!Jungseong::is_compatibility_jungseong(0x314E));
     assert!(!Jungseong::is_compatibility_jungseong(0x3164));
     assert!(!Jungseong::is_compatibility_jungseong(0x1161));
-  }
-
-  #[test]
-  fn test_compatibility_to_conjoining_jungseong() {
-    assert_eq!(
-      Jungseong::compatibility_to_conjoining_jungseong(0x314F),
-      Some(0x1161)
-    );
-    assert_eq!(
-      Jungseong::compatibility_to_conjoining_jungseong(0x3163),
-      Some(0x1175)
-    );
-
-    assert_eq!(
-      Jungseong::compatibility_to_conjoining_jungseong(COMPAT_JUNGSEONG_BASE),
-      Some(JUNGSEONG_BASE)
-    );
-    assert_eq!(
-      Jungseong::compatibility_to_conjoining_jungseong(COMPAT_JUNGSEONG_LAST),
-      Some(JUNGSEONG_LAST)
-    );
-
-    assert_eq!(
-      Jungseong::compatibility_to_conjoining_jungseong(0x1161),
-      None
-    );
-    assert_eq!(
-      Jungseong::compatibility_to_conjoining_jungseong(0x3164),
-      None
-    );
-  }
-
-  #[test]
-  fn test_conjoining_jungseong_to_compatibility() {
-    assert_eq!(
-      Jungseong::conjoining_jungseong_to_compatibility(0x1161),
-      Some(0x314F)
-    );
-    assert_eq!(
-      Jungseong::conjoining_jungseong_to_compatibility(0x1175),
-      Some(0x3163)
-    );
-
-    assert_eq!(
-      Jungseong::conjoining_jungseong_to_compatibility(JUNGSEONG_BASE),
-      Some(COMPAT_JUNGSEONG_BASE)
-    );
-    assert_eq!(
-      Jungseong::conjoining_jungseong_to_compatibility(JUNGSEONG_LAST),
-      Some(COMPAT_JUNGSEONG_LAST)
-    );
-
-    assert_eq!(
-      Jungseong::conjoining_jungseong_to_compatibility(0x314F),
-      None
-    );
-    assert_eq!(
-      Jungseong::conjoining_jungseong_to_compatibility(0x1160),
-      None
-    );
-    assert_eq!(
-      Jungseong::conjoining_jungseong_to_compatibility(0x1176),
-      None
-    );
   }
 
   #[test]
