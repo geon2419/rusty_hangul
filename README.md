@@ -173,6 +173,10 @@ console.log(unitAt("가A", 1)); // { original: "A", isHangul: false, ... }
 console.log(assemble("ㄱㅏㅂㅅ")); // "값"
 ```
 
+## For AI coding agents
+
+See [`llms.txt`](./llms.txt) for a short API overview.
+
 ## License
 
 [MIT](./LICENSE)

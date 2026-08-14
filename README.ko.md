@@ -173,6 +173,10 @@ console.log(unitAt("가A", 1)); // { original: "A", isHangul: false, ... }
 console.log(assemble("ㄱㅏㅂㅅ")); // "값"
 ```
 
+## AI 코딩 에이전트
+
+API 요약은 [`llms.txt`](./llms.txt)에 있습니다.
+
 ## 라이선스
 
 [MIT](./LICENSE)
