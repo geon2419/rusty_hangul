@@ -6,10 +6,13 @@ const HANGUL_BASE: u32 = 0xAC00;
 const JUNGSEONG_COUNT: u32 = 21;
 const JONGSEONG_COUNT: u32 = 28;
 
+/// How to resolve a jamo that could be a compound batchim or the next syllable.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum AssemblePolicy {
+  /// Prefer starting the next syllable (`ㄱㅏㄱㅅㅏ` → `각사`).
   #[default]
   PreferNextSyllable,
+  /// Prefer a compound final (`ㄱㅏㄱㅅㅏ` → `갃ㅏ`).
   PreferCompoundFinal,
 }
 
@@ -23,10 +26,12 @@ impl AssemblePolicy {
   }
 }
 
+/// Assemble compatibility jamo into syllables using [`AssemblePolicy::PreferNextSyllable`].
 pub fn assemble(string: &str) -> String {
   assemble_with_policy(string, AssemblePolicy::default())
 }
 
+/// Assemble compatibility jamo into syllables with an explicit [`AssemblePolicy`].
 pub fn assemble_with_policy(string: &str, policy: AssemblePolicy) -> String {
   let chars: Vec<char> = string.chars().collect();
   let mut result = String::with_capacity(string.len());

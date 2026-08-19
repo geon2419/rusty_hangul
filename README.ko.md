@@ -19,7 +19,7 @@ Rust로 만든 한글 문자열 처리 라이브러리입니다. 음절 분해, 
 
 | 경로 | 패키지 이름 | 역할 |
 | --- | --- | --- |
-| `core/` | `hangul` | Rust 크레이트 |
+| `core/` | `rusty_hangul` (코드에서는 `hangul`) | Rust 크레이트 |
 | `node/` | `node` | [napi-rs](https://napi.rs/) Node.js 네이티브 애드온 |
 | `wasm/` | `wasm` (`hangul-wasm`) | wasm-bindgen WebAssembly 바인딩 |
 
@@ -31,18 +31,27 @@ Rust로 만든 한글 문자열 처리 라이브러리입니다. 음절 분해, 
 
 ### Rust
 
-크레이트 이름은 `rusty_hangul`이 아니라 `hangul`입니다.
+crates.io 패키지 이름은 `rusty_hangul`입니다. Rust 코드에서는 계속 `hangul`이므로 예시는 `use hangul::...`입니다. crates.io에 `hangul`이 이미 있습니다.
+
+crates.io에서:
 
 ```toml
 [dependencies]
-hangul = { git = "https://github.com/geon2419/rusty_hangul", tag = "v0.1.0" }
+rusty_hangul = "0.1.0"
+```
+
+git 태그에서:
+
+```toml
+[dependencies]
+rusty_hangul = { git = "https://github.com/geon2419/rusty_hangul", tag = "v0.1.0" }
 ```
 
 로컬 클론에서는 `core/`를 가리킵니다.
 
 ```toml
 [dependencies]
-hangul = { path = "path/to/rusty_hangul/core" }
+rusty_hangul = { path = "path/to/rusty_hangul/core" }
 ```
 
 ### Node.js와 WebAssembly

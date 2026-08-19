@@ -1,11 +1,16 @@
 use crate::choseong::Choseong;
 use crate::hangul::{Hangul, HangulUnit};
 
+/// Range of a choseong / progressive search hit inside a [`Hangul`] value.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ChoseongMatch {
+  /// Inclusive start unit index.
   pub start: usize,
+  /// Exclusive end unit index.
   pub end: usize,
+  /// Inclusive start byte offset in the source string.
   pub byte_start: usize,
+  /// Exclusive end byte offset in the source string.
   pub byte_end: usize,
 }
 

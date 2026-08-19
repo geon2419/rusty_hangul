@@ -34,14 +34,17 @@ impl<'a> HangulUnit<'a> {
     self.original
   }
 
+  /// Parsed Hangul letter when this unit is a syllable.
   pub fn letter(&self) -> Option<&'a HangulLetter> {
     self.letter
   }
 
+  /// Whether this unit is an NFC or NFD Hangul syllable.
   pub fn is_hangul(&self) -> bool {
     self.letter.is_some()
   }
 
+  /// Compatibility jamo for a syllable, or the original characters otherwise.
   pub fn disassembled_chars(&self) -> Vec<char> {
     match self.letter {
       Some(letter) => letter.disassembled_chars(),
@@ -49,10 +52,12 @@ impl<'a> HangulUnit<'a> {
     }
   }
 
+  /// Inclusive-exclusive byte range start in [`Hangul::original`].
   pub fn byte_start(&self) -> usize {
     self.start_byte
   }
 
+  /// Inclusive-exclusive byte range end in [`Hangul::original`].
   pub fn byte_end(&self) -> usize {
     self.end_byte
   }
@@ -73,6 +78,9 @@ impl CharUnit {
   }
 }
 
+/// Parsed Hangul text: NFC syllables, NFD jamo clusters, and other characters.
+///
+/// Unit count ([`Hangul::len`]) is the number of parsed slots, not UTF-8 bytes.
 pub struct Hangul {
   char_units: Vec<CharUnit>,
   original: String,
@@ -82,6 +90,7 @@ pub struct Hangul {
 }
 
 impl Hangul {
+  /// Parse `string` into Hangul syllables and other character units.
   pub fn new(string: &str) -> Self {
     Self {
       char_units: Self::parse_char_units(string),
@@ -147,10 +156,12 @@ impl Hangul {
     char_units
   }
 
+  /// Source string passed to [`Hangul::new`].
   pub fn original(&self) -> &str {
     &self.original
   }
 
+  /// Number of parsed units (NFC syllable or one NFD jamo cluster).
   pub fn len(&self) -> usize {
     self.char_units.len()
   }
@@ -159,6 +170,7 @@ impl Hangul {
     self.char_units.is_empty()
   }
 
+  /// Unit at `index`, if it exists.
   pub fn get(&self, index: usize) -> Option<HangulUnit<'_>> {
     self
       .char_units
@@ -166,6 +178,7 @@ impl Hangul {
       .map(|unit| unit.as_unit(&self.original))
   }
 
+  /// Iterate every parsed unit in order.
   pub fn units(&self) -> impl ExactSizeIterator<Item = HangulUnit<'_>> + '_ {
     self
       .char_units
@@ -173,6 +186,7 @@ impl Hangul {
       .map(|unit| unit.as_unit(&self.original))
   }
 
+  /// Iterate Hangul syllables only, skipping non-Hangul units.
   pub fn letters(&self) -> impl Iterator<Item = &HangulLetter> + '_ {
     self
       .char_units
@@ -180,6 +194,7 @@ impl Hangul {
       .filter_map(|unit| unit.hangul.as_ref())
   }
 
+  /// Compatibility jamo string. Non-Hangul characters are kept as-is.
   pub fn disassemble(&self) -> String {
     self
       .disassembled_cache
@@ -187,6 +202,7 @@ impl Hangul {
       .clone()
   }
 
+  /// Choseong of each syllable. Non-Hangul characters are kept as-is.
   pub fn get_choseong(&self) -> String {
     self
       .choseong_cache
@@ -194,6 +210,7 @@ impl Hangul {
       .clone()
   }
 
+  /// Per-unit jamo groups. Compound batchim is split (`값` → `['ㄱ', 'ㅏ', 'ㅂ', 'ㅅ']`).
   pub fn disassemble_to_groups(&self) -> Vec<Vec<char>> {
     self
       .groups_cache
@@ -201,6 +218,7 @@ impl Hangul {
       .clone()
   }
 
+  /// Whether the last Hangul syllable has a batchim (final consonant).
   pub fn has_batchim(&self) -> bool {
     self
       .last_hangul_letter()
@@ -208,6 +226,7 @@ impl Hangul {
       .unwrap_or(false)
   }
 
+  /// Particle from a pair such as `"을/를"`, chosen from the last Hangul syllable.
   pub fn josa_particle(&self, pair: &str) -> Result<&'static str, JosaError> {
     let pair = JosaPair::parse(pair).ok_or_else(|| JosaError::InvalidPair(pair.to_owned()))?;
     let last_letter = self.last_hangul_letter();
@@ -219,14 +238,17 @@ impl Hangul {
     Ok(pair.select(has_batchim, has_rieul_batchim))
   }
 
+  /// Whether [`Hangul::find_choseong`] finds `query`.
   pub fn contains_choseong(&self, query: &str) -> bool {
     self.find_choseong(query).is_some()
   }
 
+  /// First span matching a choseong or progressive syllable prefix query.
   pub fn find_choseong(&self, query: &str) -> Option<crate::ChoseongMatch> {
     crate::choseong_search::find_choseong(self, query)
   }
 
+  /// Source text with the matching josa inserted after the last Hangul syllable.
   pub fn josa(&self, pair: &str) -> Result<String, JosaError> {
     let particle = self.josa_particle(pair)?;
     let insertion = self

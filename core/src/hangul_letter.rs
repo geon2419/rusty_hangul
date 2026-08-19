@@ -4,6 +4,7 @@ use crate::jungseong::Jungseong;
 use crate::nfc::NFC;
 use crate::nfd::NFD;
 
+/// One NFC or NFD Hangul syllable with choseong, jungseong, and optional jongseong.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct HangulLetter {
   value_chars: [char; 3],

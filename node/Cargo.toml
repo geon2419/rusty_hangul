@@ -3,6 +3,7 @@ edition = "2021"
 name = "node"
 version = "0.1.0"
 license = "MIT"
+publish = false
 
 [lib]
 crate-type = ["cdylib"]
@@ -10,7 +11,7 @@ crate-type = ["cdylib"]
 [dependencies]
 napi = "3.0.0-alpha"
 napi-derive = "3.0.0-alpha"
-hangul = { path = "../core" }
+rusty_hangul = { path = "../core" }
 
 [build-dependencies]
 napi-build = "2"

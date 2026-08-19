@@ -19,7 +19,7 @@ This repository is a Cargo and bun workspace. Tagged releases are on the [Releas
 
 | Path | Package name | Role |
 | --- | --- | --- |
-| `core/` | `hangul` | Rust crate |
+| `core/` | `rusty_hangul` (imported as `hangul`) | Rust crate |
 | `node/` | `node` | Node.js native addon via [napi-rs](https://napi.rs/) |
 | `wasm/` | `wasm` (`hangul-wasm`) | WebAssembly bindings via wasm-bindgen |
 
@@ -31,18 +31,27 @@ You need a [Rust toolchain](https://rustup.rs/). Node.js and WebAssembly binding
 
 ### Rust
 
-The crate name is `hangul`, not `rusty_hangul`.
+The crates.io package is `rusty_hangul`. In Rust the crate is still `hangul`, so examples use `use hangul::...`. The name `hangul` is already taken on crates.io.
+
+From crates.io:
 
 ```toml
 [dependencies]
-hangul = { git = "https://github.com/geon2419/rusty_hangul", tag = "v0.1.0" }
+rusty_hangul = "0.1.0"
+```
+
+From a git tag:
+
+```toml
+[dependencies]
+rusty_hangul = { git = "https://github.com/geon2419/rusty_hangul", tag = "v0.1.0" }
 ```
 
 From a local clone, point at `core/`:
 
 ```toml
 [dependencies]
-hangul = { path = "path/to/rusty_hangul/core" }
+rusty_hangul = { path = "path/to/rusty_hangul/core" }
 ```
 
 ### Node.js and WebAssembly

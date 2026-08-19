@@ -1,8 +1,10 @@
 use std::error::Error;
 use std::fmt;
 
+/// Failed josa lookup.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum JosaError {
+  /// `pair` is not a supported form such as `"을/를"`.
   InvalidPair(String),
 }
 

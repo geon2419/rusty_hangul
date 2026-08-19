@@ -1,8 +1,19 @@
 [package]
-name = "hangul"
+name = "rusty_hangul"
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.70"
+description = "Hangul syllable disassembly, choseong search, batchim/josa selection, and jamo assembly"
 license = "MIT"
+license-file = "../LICENSE"
+authors = ["Geonhyeok Lee"]
+repository = "https://github.com/geon2419/rusty_hangul"
+homepage = "https://github.com/geon2419/rusty_hangul"
+documentation = "https://docs.rs/rusty_hangul"
+readme = "../README.md"
+keywords = ["hangul", "korean", "jamo", "text"]
+categories = ["text-processing", "internationalization"]
 
 [lib]
+name = "hangul"
 path = "src/lib.rs"
