@@ -14,6 +14,7 @@ describe("node bindings", () => {
 		expect(hangul.containsChoseong("ㄱA")).toBe(true);
 		expect(hangul.findChoseong("ㄱA")?.end).toBe(2);
 		expect(hangul.get(0)?.isHangul).toBe(true);
+		expect(hangul.get(0)?.original).toBe("가");
 		expect(hangul.get(1)?.original).toBe("A");
 		expect(hangul.get(4)).toBeNull();
 		expect(hangul.disassembleToGroups()).toEqual([
@@ -23,6 +24,14 @@ describe("node bindings", () => {
 			["!"],
 		]);
 		expect(() => new Hangul("사과").josa("을")).toThrow();
+	});
+
+	it("returns the full NFD syllable as unit original", () => {
+		const nfd = new Hangul("\u{1100}\u{1161}\u{11AB}");
+
+		expect(nfd.length).toBe(1);
+		expect(nfd.get(0)?.original).toBe("\u{1100}\u{1161}\u{11AB}");
+		expect(nfd.get(0)?.isHangul).toBe(true);
 	});
 
 	it("assembles jamo through the free function", () => {

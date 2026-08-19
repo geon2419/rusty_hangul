@@ -58,7 +58,13 @@ fn unit_matches(query: HangulUnit<'_>, target: HangulUnit<'_>) -> bool {
   query.original() == target.original()
 }
 
-fn query_choseong(ch: char) -> Option<char> {
+fn query_choseong(text: &str) -> Option<char> {
+  let mut chars = text.chars();
+  let ch = chars.next()?;
+  if chars.next().is_some() {
+    return None;
+  }
+
   if Choseong::compatibility_index(ch).is_some() {
     return Some(ch);
   }

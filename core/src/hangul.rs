@@ -9,7 +9,6 @@ use crate::jungseong::Jungseong;
 
 #[derive(Clone)]
 struct CharUnit {
-  original: char,
   hangul: Option<HangulLetter>,
   start_byte: usize,
   end_byte: usize,
@@ -18,16 +17,20 @@ struct CharUnit {
 /// One parsed slot in a [`Hangul`] value: a Hangul syllable or a single other character.
 ///
 /// NFD jamo that form one syllable (`ᄀ` + `ᅡ` + `ᆫ`) occupy a single unit.
+/// [`HangulUnit::original`] is the source slice for that whole slot.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct HangulUnit<'a> {
-  original: char,
+  original: &'a str,
   letter: Option<&'a HangulLetter>,
   start_byte: usize,
   end_byte: usize,
 }
 
 impl<'a> HangulUnit<'a> {
-  pub fn original(&self) -> char {
+  /// Source text occupied by this unit.
+  ///
+  /// For an NFD syllable this is every jamo in the cluster, not just the first.
+  pub fn original(&self) -> &'a str {
     self.original
   }
 
@@ -42,7 +45,7 @@ impl<'a> HangulUnit<'a> {
   pub fn disassembled_chars(&self) -> Vec<char> {
     match self.letter {
       Some(letter) => letter.disassembled_chars(),
-      None => vec![self.original],
+      None => self.original.chars().collect(),
     }
   }
 
@@ -56,9 +59,13 @@ impl<'a> HangulUnit<'a> {
 }
 
 impl CharUnit {
-  fn as_unit(&self) -> HangulUnit<'_> {
+  fn source<'a>(&self, text: &'a str) -> &'a str {
+    &text[self.start_byte..self.end_byte]
+  }
+
+  fn as_unit<'a>(&'a self, text: &'a str) -> HangulUnit<'a> {
     HangulUnit {
-      original: self.original,
+      original: self.source(text),
       letter: self.hangul.as_ref(),
       start_byte: self.start_byte,
       end_byte: self.end_byte,
@@ -92,7 +99,6 @@ impl Hangul {
     while let Some((start_byte, ch)) = chars.next() {
       if let Some(letter) = HangulLetter::parse_from_char(ch) {
         char_units.push(CharUnit {
-          original: ch,
           hangul: Some(letter),
           start_byte,
           end_byte: start_byte + ch.len_utf8(),
@@ -122,7 +128,6 @@ impl Hangul {
               .expect("choseong+jungseong(+jongseong) must form a valid NFD syllable");
 
             char_units.push(CharUnit {
-              original: ch,
               hangul: Some(letter),
               start_byte,
               end_byte,
@@ -133,7 +138,6 @@ impl Hangul {
       }
 
       char_units.push(CharUnit {
-        original: ch,
         hangul: None,
         start_byte,
         end_byte: start_byte + ch.len_utf8(),
@@ -156,11 +160,17 @@ impl Hangul {
   }
 
   pub fn get(&self, index: usize) -> Option<HangulUnit<'_>> {
-    self.char_units.get(index).map(CharUnit::as_unit)
+    self
+      .char_units
+      .get(index)
+      .map(|unit| unit.as_unit(&self.original))
   }
 
   pub fn units(&self) -> impl ExactSizeIterator<Item = HangulUnit<'_>> + '_ {
-    self.char_units.iter().map(CharUnit::as_unit)
+    self
+      .char_units
+      .iter()
+      .map(|unit| unit.as_unit(&self.original))
   }
 
   pub fn letters(&self) -> impl Iterator<Item = &HangulLetter> + '_ {
@@ -255,7 +265,7 @@ impl Hangul {
     for unit in &self.char_units {
       match &unit.hangul {
         Some(hangul) => hangul.append_disassembled(&mut result),
-        None => result.push(unit.original),
+        None => result.push_str(unit.source(&self.original)),
       }
     }
 
@@ -272,7 +282,7 @@ impl Hangul {
     for unit in &self.char_units {
       match &unit.hangul {
         Some(hangul) => result.push(hangul.choseong.compatibility_value),
-        None => result.push(unit.original),
+        None => result.push_str(unit.source(&self.original)),
       }
     }
 
@@ -283,7 +293,7 @@ impl Hangul {
     self
       .char_units
       .iter()
-      .map(|unit| unit.as_unit().disassembled_chars())
+      .map(|unit| unit.as_unit(&self.original).disassembled_chars())
       .collect()
   }
 }
@@ -883,7 +893,7 @@ mod tests {
 
     let first = sentence.get(0).unwrap();
     assert!(first.is_hangul());
-    assert_eq!(first.original(), '가');
+    assert_eq!(first.original(), "가");
     assert_eq!(first.letter().unwrap().choseong.compatibility_value, 'ㄱ');
     assert_eq!(first.letter().unwrap().jungseong.compatibility_value, 'ㅏ');
     assert!(first.letter().unwrap().jongseong.is_none());
@@ -891,7 +901,7 @@ mod tests {
 
     let middle = sentence.get(1).unwrap();
     assert!(!middle.is_hangul());
-    assert_eq!(middle.original(), 'A');
+    assert_eq!(middle.original(), "A");
     assert!(middle.letter().is_none());
     assert_eq!(middle.disassembled_chars(), vec!['A']);
 
@@ -920,7 +930,7 @@ mod tests {
     let giyeok = Hangul::new("ㄱ");
     assert_eq!(giyeok.len(), 1);
     assert!(!giyeok.get(0).unwrap().is_hangul());
-    assert_eq!(giyeok.get(0).unwrap().original(), 'ㄱ');
+    assert_eq!(giyeok.get(0).unwrap().original(), "ㄱ");
     assert_eq!(giyeok.disassemble_to_groups(), vec![vec!['ㄱ']]);
 
     let vowel = Hangul::new("ㅏ");
@@ -931,8 +941,28 @@ mod tests {
     assert_eq!(nfd.len(), 1);
     let unit = nfd.get(0).unwrap();
     assert!(unit.is_hangul());
-    assert_eq!(unit.original(), '\u{1100}');
+    assert_eq!(unit.original(), "\u{1100}\u{1161}\u{11AB}");
     assert_eq!(unit.disassembled_chars(), vec!['ㄱ', 'ㅏ', 'ㄴ']);
+  }
+
+  #[test]
+  fn test_unit_originals_rejoin_source() {
+    let samples = [
+      "",
+      "가",
+      "가A값",
+      "Hello 안녕!",
+      "\u{1100}\u{1161}\u{11AB}",
+      "가\u{1100}\u{1161}!",
+      "\u{110B}\u{1161}\u{11AB}\u{1102}\u{1167}\u{11BC}",
+      "가🙂나",
+    ];
+
+    for sample in samples {
+      let hangul = Hangul::new(sample);
+      let rejoined: String = hangul.units().map(|unit| unit.original()).collect();
+      assert_eq!(rejoined, sample, "units should rejoin {sample:?}");
+    }
   }
 
   #[test]

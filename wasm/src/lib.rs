@@ -147,6 +147,11 @@ mod tests {
     assert_eq!(josa_particle("사과", "을/를").unwrap(), "를");
     assert_eq!(hangul_len("가A값"), 3);
     assert!(unit_at("가A값", 0).unwrap().is_hangul);
+    assert_eq!(unit_at("가A값", 0).unwrap().original, "가");
+    assert_eq!(
+      unit_at("\u{1100}\u{1161}\u{11AB}", 0).unwrap().original,
+      "\u{1100}\u{1161}\u{11AB}"
+    );
     assert!(!unit_at("ㄱ", 0).unwrap().is_hangul);
     assert!(unit_at("가A값", 3).is_none());
     assert_eq!(assemble("ㄱㅏㄱㅅㅏ", None).unwrap(), "각사");
