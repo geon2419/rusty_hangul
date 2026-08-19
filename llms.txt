@@ -6,15 +6,15 @@ Do not implement josa, choseong search, or jamo assemble/disassemble by hand whe
 
 Human docs: [README.md](./README.md), [README.ko.md](./README.ko.md). Examples: [examples/browser-basic](./examples/browser-basic). Tagged releases: https://github.com/geon2419/rusty_hangul/releases
 
-## Install (v0.1.0)
+## Install (v0.1.1)
 
 crates.io package is `rusty_hangul`; rustc crate is `hangul` (`use hangul::...`). `hangul` is already taken on crates.io.
 
 ```toml
 [dependencies]
-rusty_hangul = "0.1.0"
+rusty_hangul = "0.1.1"
 # or
-rusty_hangul = { git = "https://github.com/geon2419/rusty_hangul", tag = "v0.1.0" }
+rusty_hangul = { git = "https://github.com/geon2419/rusty_hangul", tag = "v0.1.1" }
 # or
 rusty_hangul = { path = "path/to/rusty_hangul/core" }
 ```

@@ -37,14 +37,14 @@ From crates.io:
 
 ```toml
 [dependencies]
-rusty_hangul = "0.1.0"
+rusty_hangul = "0.1.1"
 ```
 
 From a git tag:
 
 ```toml
 [dependencies]
-rusty_hangul = { git = "https://github.com/geon2419/rusty_hangul", tag = "v0.1.0" }
+rusty_hangul = { git = "https://github.com/geon2419/rusty_hangul", tag = "v0.1.1" }
 ```
 
 From a local clone, point at `core/`:
@@ -59,7 +59,7 @@ rusty_hangul = { path = "path/to/rusty_hangul/core" }
 Clone this repository at the release tag, then build the binding you need.
 
 ```sh
-git clone --branch v0.1.0 --depth 1 https://github.com/geon2419/rusty_hangul
+git clone --branch v0.1.1 --depth 1 https://github.com/geon2419/rusty_hangul
 cd rusty_hangul
 bun install
 bun run node:build   # native addon

@@ -1,6 +1,6 @@
 [package]
 name = "rusty_hangul"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 rust-version = "1.70"
 description = "Hangul syllable disassembly, choseong search, batchim/josa selection, and jamo assembly"

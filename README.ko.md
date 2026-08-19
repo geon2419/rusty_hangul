@@ -37,14 +37,14 @@ crates.io에서:
 
 ```toml
 [dependencies]
-rusty_hangul = "0.1.0"
+rusty_hangul = "0.1.1"
 ```
 
 git 태그에서:
 
 ```toml
 [dependencies]
-rusty_hangul = { git = "https://github.com/geon2419/rusty_hangul", tag = "v0.1.0" }
+rusty_hangul = { git = "https://github.com/geon2419/rusty_hangul", tag = "v0.1.1" }
 ```
 
 로컬 클론에서는 `core/`를 가리킵니다.
@@ -59,7 +59,7 @@ rusty_hangul = { path = "path/to/rusty_hangul/core" }
 릴리스 태그를 클론한 뒤 필요한 바인딩을 빌드합니다.
 
 ```sh
-git clone --branch v0.1.0 --depth 1 https://github.com/geon2419/rusty_hangul
+git clone --branch v0.1.1 --depth 1 https://github.com/geon2419/rusty_hangul
 cd rusty_hangul
 bun install
 bun run node:build   # 네이티브 애드온
