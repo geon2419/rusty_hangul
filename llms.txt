@@ -108,4 +108,4 @@ josa("사과", "을/를"); // "사과를"
 assemble("ㄱㅏㅂㅅ"); // "값"
 ```
 
-NFC and NFD syllables are both parsed as one unit (`Hangul::new("\u{1100}\u{1161}\u{11AB}")` is `간`).
+NFC and NFD syllables are both parsed as one unit (`Hangul::new("\u{1100}\u{1161}\u{11AB}")` is `간`). `HangulUnit::original()` / Node-WASM `original` is the source slice for that unit, so an NFD syllable returns every jamo, not the first jamo only.

@@ -213,7 +213,11 @@ mod tests {
 
     let first = hangul.get(0).unwrap();
     assert!(first.is_hangul());
+    assert_eq!(first.original(), "가");
     assert_eq!(first.choseong().as_deref(), Some("ㄱ"));
+    let nfd = Hangul::new("\u{1100}\u{1161}\u{11AB}".to_string());
+    assert_eq!(nfd.length(), 1);
+    assert_eq!(nfd.get(0).unwrap().original(), "\u{1100}\u{1161}\u{11AB}");
     assert!(hangul.get(4).is_none());
     assert_eq!(
       hangul.disassemble_to_groups(),

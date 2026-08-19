@@ -100,6 +100,7 @@ assert_eq!(mixed.get_choseong(), "Hello ㅇㄴ!");
 
 let nfd = Hangul::new("\u{1100}\u{1161}\u{11AB}"); // 간
 assert_eq!(nfd.disassemble(), "ㄱㅏㄴ");
+assert_eq!(nfd.get(0).unwrap().original(), "\u{1100}\u{1161}\u{11AB}");
 
 assert!(!Hangul::new("사과").has_batchim());
 assert_eq!(Hangul::new("사과").josa("을/를").unwrap(), "사과를");
