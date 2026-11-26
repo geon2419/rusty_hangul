@@ -4,7 +4,8 @@
 	"scripts": {
 		"build:wasm": "wasm-pack build ../wasm --target web --out-dir pkg --out-name hangul",
 		"bench": "bun run build:wasm && bun x vitest bench",
-		"bench:only": "bun x vitest bench"
+		"bench:only": "bun x vitest bench",
+		"report": "bun run scripts/report.ts"
 	},
 	"devDependencies": {
 		"@types/node": "^22.14.0",

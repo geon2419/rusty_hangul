@@ -7,7 +7,8 @@
 	"scripts": {
 		"node:build": "bun --filter node build",
 		"wasm:build": "bun --filter wasm build",
-		"bench": "bun --filter benchmark bench"
+		"bench": "bun --filter benchmark bench",
+		"bench:report": "bun --filter benchmark report"
 	},
 	"packageManager": "bun@1.3.3"
 }
