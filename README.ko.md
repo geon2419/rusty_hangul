@@ -222,7 +222,7 @@ Apple silicon 노트북(macOS arm64)에서 측정한 초당 평균 처리량입�
 - es-hangul에는 초성 검색이 없어 `containsChoseong`, `findChoseong`은 Rust 레인 두 개만 비교합니다.
 - 각 행은 바인딩에서 `Hangul`을 생성하는 비용까지 포함한 시나리오 전체를 측정합니다.
 
-`benchmark` GitHub Actions 워크플로는 `main` 브랜치에 푸시될 때 리포트를 실행하고 `benchmark-report.json`을 아티팩트로 업로드합니다.
+`benchmark` GitHub Actions 워크플로는 수동 실행으로만 리포트를 만들고 `benchmark-report.json`을 아티팩트로 업로드합니다.
 
 ## AI 코딩 에이전트
 

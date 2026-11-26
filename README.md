@@ -222,7 +222,7 @@ Mean throughput in operations per second on an Apple silicon laptop (macOS arm64
 - es-hangul has no choseong search, so `containsChoseong` and `findChoseong` only compare the two Rust lanes.
 - Each row measures the whole scenario, including constructing `Hangul` in the bindings.
 
-The `benchmark` GitHub Actions workflow runs the report on pushes to `main` and uploads `benchmark-report.json` as an artifact.
+The `benchmark` GitHub Actions workflow runs the report on manual dispatch only and uploads `benchmark-report.json` as an artifact.
 
 ## For AI coding agents
 
