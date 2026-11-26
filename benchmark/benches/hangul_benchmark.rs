@@ -8,14 +8,12 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 struct Scenario {
   id: String,
-  label: String,
   text: String,
 }
 
 #[derive(Deserialize)]
 struct Workload {
   id: String,
-  label: String,
   scenarios: Vec<String>,
   #[serde(default)]
   args: Vec<String>,
@@ -92,9 +90,9 @@ fn bench_scenarios(c: &mut Criterion) {
           panic!("fixtures/workloads.json references an unknown scenario id: {scenario_id}")
         });
 
-      // The label matches the JavaScript benchmark label so both harnesses can be
-      // merged into one report.
-      let mut group = c.benchmark_group(format!("{} · {}", workload.label, scenario.label));
+      // Group and function ids name the criterion output directories, so they stay ASCII
+      // and short; the report maps them back to the display labels from the fixtures.
+      let mut group = c.benchmark_group(&workload.id);
 
       // 10k samples per group made the suite dominated by outliers; a few hundred
       // samples over a fixed measurement window is enough for a stable mean.
@@ -103,7 +101,7 @@ fn bench_scenarios(c: &mut Criterion) {
         .warm_up_time(Duration::from_secs(1))
         .measurement_time(Duration::from_secs(3));
 
-      group.bench_function("rusty-hangul", |b| {
+      group.bench_function(&scenario.id, |b| {
         b.iter(|| run_workload(workload, &scenario.text))
       });
 

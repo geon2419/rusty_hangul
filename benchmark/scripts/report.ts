@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join, relative, sep } from "node:path";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import scenarios from "../fixtures/scenarios.json";
@@ -12,13 +12,16 @@ const repoRoot = fileURLToPath(new URL("../..", import.meta.url));
 const criterionDir = join(repoRoot, "target", "criterion");
 
 const CORE_LANE = "rusty-hangul/core";
-const JS_LANES = ["es-hangul", "rusty-hangul/node", "rusty-hangul/wasm"] as const;
+const JS_LANES = ["rusty-hangul/node", "rusty-hangul/wasm", "es-hangul"] as const;
 const LANES = [CORE_LANE, ...JS_LANES] as const;
 
 type LaneMetrics = Partial<Record<(typeof LANES)[number], number>>;
 
 interface Row {
 	label: string;
+	workloadId: string;
+	scenarioId: string;
+	api?: string;
 	opsPerSecond: LaneMetrics;
 }
 
@@ -32,7 +35,13 @@ const rows: Row[] = workloads.flatMap((workload) =>
 			fail(`fixtures/workloads.json references an unknown scenario id: ${scenarioId}`);
 		}
 
-		return { label: `${workload.label} · ${scenario.label}`, opsPerSecond: {} };
+		return {
+			label: `${workload.label} · ${scenario.label}`,
+			workloadId: workload.id,
+			scenarioId: scenario.id,
+			api: workload.api,
+			opsPerSecond: {},
+		};
 	}),
 );
 
@@ -88,25 +97,30 @@ function ensureArtifacts() {
 	}
 }
 
-function collectCriterion(dir: string, root = dir) {
-	for (const entry of readdirSync(dir, { withFileTypes: true })) {
-		const path = join(dir, entry.name);
+function collectCriterion() {
+	// criterion nests results as <workload id>/<scenario id>/new/estimates.json, which keeps
+	// the paths ASCII and short no matter how the display labels are worded.
+	for (const row of rows) {
+		const path = join(criterionDir, row.workloadId, row.scenarioId, "new", "estimates.json");
 
-		if (entry.isDirectory()) {
-			collectCriterion(path, root);
+		if (!existsSync(path)) {
+			if (verbose) {
+				console.error(`report: no criterion result for ${row.workloadId}/${row.scenarioId}`);
+			}
 			continue;
 		}
 
-		if (entry.name !== "estimates.json") continue;
-
-		const parts = relative(root, dirname(path)).split(sep);
-		if (parts.at(-1) !== "new" || parts.at(-2) !== "rusty-hangul") continue;
-
-		const metrics = findRow(parts.slice(0, -2).join("/"));
-		if (!metrics) continue;
-
 		const meanNanoseconds: number = JSON.parse(readFileSync(path, "utf8")).mean.point_estimate;
-		metrics[CORE_LANE] = 1e9 / meanNanoseconds;
+		row.opsPerSecond[CORE_LANE] = 1e9 / meanNanoseconds;
+	}
+
+	if (verbose) {
+		const known = new Set(rows.map((row) => row.workloadId));
+		for (const entry of readdirSync(criterionDir, { withFileTypes: true })) {
+			if (entry.isDirectory() && !known.has(entry.name)) {
+				console.error(`report: ignoring leftover criterion group: ${entry.name}`);
+			}
+		}
 	}
 }
 
@@ -184,7 +198,7 @@ function main() {
 		if (!existsSync(criterionDir)) {
 			fail(`criterion output missing: ${criterionDir}`);
 		}
-		collectCriterion(criterionDir);
+		collectCriterion();
 	}
 
 	if (!rustOnly) {

@@ -16,6 +16,7 @@ export interface Scenario {
 export interface WorkloadFixture {
 	id: string;
 	label: string;
+	api?: string;
 	scenarios: string[];
 	args?: string[];
 }

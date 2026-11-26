@@ -1,7 +1,8 @@
 [
   {
     "id": "disassemble-choseong",
-    "label": "disassemble + getChoseong",
+    "label": "글자 분해 + 초성 추출",
+    "api": "disassemble + getChoseong",
     "scenarios": [
       "name",
       "sentence",
@@ -13,7 +14,8 @@
   },
   {
     "id": "disassemble-groups",
-    "label": "disassembleToGroups",
+    "label": "초성·중성·종성 분해",
+    "api": "disassembleToGroups",
     "scenarios": [
       "name",
       "sentence",
@@ -22,7 +24,8 @@
   },
   {
     "id": "has-batchim",
-    "label": "hasBatchim",
+    "label": "받침 확인",
+    "api": "hasBatchim",
     "scenarios": [
       "name",
       "sentence"
@@ -30,7 +33,8 @@
   },
   {
     "id": "josa",
-    "label": "josa",
+    "label": "조사 선택 (을/를)",
+    "api": "josa",
     "scenarios": [
       "name"
     ],
@@ -40,14 +44,16 @@
   },
   {
     "id": "assemble",
-    "label": "assemble",
+    "label": "자모 조합",
+    "api": "assemble",
     "scenarios": [
       "jamo"
     ]
   },
   {
     "id": "contains-choseong",
-    "label": "containsChoseong",
+    "label": "초성 포함 확인",
+    "api": "containsChoseong",
     "scenarios": [
       "sentence",
       "paragraph"
@@ -58,7 +64,8 @@
   },
   {
     "id": "find-choseong",
-    "label": "findChoseong",
+    "label": "초성 위치 찾기",
+    "api": "findChoseong",
     "scenarios": [
       "sentence",
       "paragraph"

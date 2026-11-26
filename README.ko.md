@@ -195,32 +195,47 @@ Rust, Node.js, WebAssembly, es-hangul 네 가지 구현이 [`benchmark/fixtures`
 
 `bun run bench:report`는 `wasm/pkg`와 Node.js 애드온이 없으면 먼저 빌드하므로, 새로 클론한 저장소에는 Rust, bun, [`wasm-pack`](https://rustwasm.github.io/wasm-pack/)만 있으면 됩니다.
 
-Apple silicon 노트북(macOS arm64)에서 측정한 초당 평균 처리량입니다. 정밀한 점수가 아니라 대략적인 규모로 읽어 주세요.
+벤치마크 이름은 `작업 · 입력` 형태입니다. Apple silicon 노트북(macOS arm64)에서 측정한 초당 평균 처리량이며, 정밀한 점수가 아니라 대략적인 규모로 읽어 주세요.
 
-| 벤치마크 | core | es-hangul | node | wasm |
+| Benchmark | core | node | wasm | es-hangul |
 | --- | ---: | ---: | ---: | ---: |
-| disassemble + getChoseong · 한글 이름 분석 | 3.42M | 1.39M | 999.0K | 1.03M |
-| disassemble + getChoseong · 한글 문장 분석 | 798.6K | 149.7K | 282.5K | 260.5K |
-| disassemble + getChoseong · 한글 문단 분석 | 234.2K | 33.4K | 87.9K | 75.6K |
-| disassemble + getChoseong · 한글 긴 문단 분석 | 101.4K | 14.2K | 31.9K | 31.6K |
-| disassemble + getChoseong · 한영 혼합 텍스트 | 1.95M | 291.3K | 589.3K | 561.0K |
-| disassemble + getChoseong · 한글 NFD 텍스트 | 1.59M | 692.0K | 681.2K | 619.1K |
-| disassembleToGroups · 한글 이름 분석 | 5.23M | 6.04M | 624.3K | 627.8K |
-| disassembleToGroups · 한글 문장 분석 | 621.9K | 584.0K | 76.9K | 61.8K |
-| disassembleToGroups · 한글 문단 분석 | 151.2K | 138.6K | 18.7K | 16.3K |
-| hasBatchim · 한글 이름 분석 | 22.37M | 24.06M | 1.46M | 5.75M |
-| hasBatchim · 한글 문장 분석 | 6.05M | 24.62M | 1.09M | 1.84M |
-| josa · 한글 이름 분석 | 15.59M | 12.43M | 1.59M | 2.16M |
-| assemble · 자모 조합 텍스트 | 8.28M | 259.7K | 4.61M | 3.53M |
-| containsChoseong · 한글 문장 분석 | 3.77M | - | 1.16M | 1.56M |
-| containsChoseong · 한글 문단 분석 | 1.38M | - | 530.6K | 604.9K |
-| findChoseong · 한글 문장 분석 | 4.54M | - | 790.6K | 1.32M |
-| findChoseong · 한글 문단 분석 | 1.51M | - | 439.5K | 544.3K |
+| 글자 분해 + 초성 추출 · 이름 (3자) | 3.50M | 983.1K | 1.03M | 1.31M |
+| 글자 분해 + 초성 추출 · 문장 (42자) | 797.4K | 287.7K | 265.3K | 146.5K |
+| 글자 분해 + 초성 추출 · 문단 (176자, 4줄) | 228.8K | 67.4K | 66.3K | 28.3K |
+| 글자 분해 + 초성 추출 · 긴 문단 (407자, 9줄) | 98.1K | 37.6K | 30.1K | 13.3K |
+| 글자 분해 + 초성 추출 · 한영·숫자 혼합 (41자) | 1.93M | 374.6K | 555.8K | 296.0K |
+| 글자 분해 + 초성 추출 · 자모로 풀린 텍스트 (14자) | 1.59M | 683.3K | 624.6K | 689.6K |
+| 초성·중성·종성 분해 · 이름 (3자) | 5.28M | 644.7K | 628.1K | 2.38M |
+| 초성·중성·종성 분해 · 문장 (42자) | 648.6K | 79.7K | 70.6K | 590.8K |
+| 초성·중성·종성 분해 · 문단 (176자, 4줄) | 160.3K | 19.8K | 17.5K | 144.5K |
+| 받침 확인 · 이름 (3자) | 23.01M | 1.83M | 5.82M | 24.77M |
+| 받침 확인 · 문장 (42자) | 6.59M | 990.2K | 2.08M | 27.23M |
+| 조사 선택 (을/를) · 이름 (3자) | 15.39M | 1.75M | 2.31M | 9.53M |
+| 자모 조합 · 자모 입력 (5자) | 8.62M | 4.51M | 3.52M | 251.2K |
+| 초성 포함 확인 · 문장 (42자) | 4.38M | 1.10M | 1.60M | - |
+| 초성 포함 확인 · 문단 (176자, 4줄) | 1.64M | 549.1K | 597.1K | - |
+| 초성 위치 찾기 · 문장 (42자) | 4.39M | 855.8K | 1.33M | - |
+| 초성 위치 찾기 · 문단 (176자, 4줄) | 1.66M | 492.8K | 540.5K | - |
+
+<details>
+<summary>벤치마크 → API</summary>
+
+| 벤치마크 | API |
+| --- | --- |
+| 글자 분해 + 초성 추출 | `disassemble` + `getChoseong` |
+| 초성·중성·종성 분해 | `disassembleToGroups` |
+| 받침 확인 | `hasBatchim` |
+| 조사 선택 (을/를) | `josa("을/를")` |
+| 자모 조합 | `assemble` |
+| 초성 포함 확인 | `containsChoseong("ㄷㅎ")` |
+| 초성 위치 찾기 | `findChoseong("ㄴㄹ")` |
+
+</details>
 
 - es-hangul은 FFI 경계를 넘지 않으므로 아주 짧은 입력에서 앞서고, 입력이 길어질수록 순위가 뒤집힙니다.
 - WebAssembly 레인은 선형 메모리로 문자열을 복사하므로 같은 Rust 코어를 감싸고도 긴 입력에서 Node.js 레인보다 느립니다.
-- es-hangul에는 초성 검색이 없어 `containsChoseong`, `findChoseong`은 Rust 레인 두 개만 비교합니다.
-- 각 행은 바인딩에서 `Hangul`을 생성하는 비용까지 포함한 시나리오 전체를 측정합니다.
+- es-hangul에는 초성 검색이 없어 `초성 포함 확인`·`초성 위치 찾기`는 Rust 레인끼리만 비교합니다.
+- 각 행은 바인딩이 입력을 감싸는 객체를 만드는 비용까지 포함해 호출 전체를 측정합니다.
 
 `benchmark` GitHub Actions 워크플로는 수동 실행으로만 리포트를 만들고 `benchmark-report.json`을 아티팩트로 업로드합니다.
 
