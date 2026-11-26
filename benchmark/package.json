@@ -2,10 +2,11 @@
 	"name": "benchmark",
 	"version": "0.1.1",
 	"scripts": {
-		"bench": "bun x vitest bench"
+		"build:wasm": "wasm-pack build ../wasm --target web --out-dir pkg --out-name hangul",
+		"bench": "bun run build:wasm && bun x vitest bench",
+		"bench:only": "bun x vitest bench"
 	},
 	"devDependencies": {
-		"@faker-js/faker": "^9.6.0",
 		"@types/node": "^22.14.0",
 		"es-hangul": "^2.3.2",
 		"vitest": "^3.1.1"
