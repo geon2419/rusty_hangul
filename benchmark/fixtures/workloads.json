@@ -1,0 +1,70 @@
+[
+  {
+    "id": "disassemble-choseong",
+    "label": "disassemble + getChoseong",
+    "scenarios": [
+      "name",
+      "sentence",
+      "paragraph",
+      "long-paragraph",
+      "mixed",
+      "nfd"
+    ]
+  },
+  {
+    "id": "disassemble-groups",
+    "label": "disassembleToGroups",
+    "scenarios": [
+      "name",
+      "sentence",
+      "paragraph"
+    ]
+  },
+  {
+    "id": "has-batchim",
+    "label": "hasBatchim",
+    "scenarios": [
+      "name",
+      "sentence"
+    ]
+  },
+  {
+    "id": "josa",
+    "label": "josa",
+    "scenarios": [
+      "name"
+    ],
+    "args": [
+      "을/를"
+    ]
+  },
+  {
+    "id": "assemble",
+    "label": "assemble",
+    "scenarios": [
+      "jamo"
+    ]
+  },
+  {
+    "id": "contains-choseong",
+    "label": "containsChoseong",
+    "scenarios": [
+      "sentence",
+      "paragraph"
+    ],
+    "args": [
+      "ㄷㅎ"
+    ]
+  },
+  {
+    "id": "find-choseong",
+    "label": "findChoseong",
+    "scenarios": [
+      "sentence",
+      "paragraph"
+    ],
+    "args": [
+      "ㄴㄹ"
+    ]
+  }
+]
