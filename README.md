@@ -183,6 +183,62 @@ console.log(unitAt("가A", 1)); // { original: "A", isHangul: false, ... }
 console.log(assemble("ㄱㅏㅂㅅ")); // "값"
 ```
 
+## Benchmarks
+
+Both harnesses read the same inputs from [`benchmark/fixtures`](./benchmark/fixtures), so the Rust, Node.js, WebAssembly, and es-hangul numbers describe identical work.
+
+| Command | What it measures |
+| --- | --- |
+| `cargo bench -p rusty_hangul_benchmark` | Rust core, via [criterion](https://github.com/bheisler/criterion.rs) |
+| `bun run bench` | es-hangul, the Node.js binding, and the WebAssembly binding, via `vitest bench` |
+| `bun run bench:report` | both harnesses at once, merged into a single table |
+
+`bun run bench:report` builds `wasm/pkg` and the Node.js addon when they are missing, so a fresh checkout only needs Rust, bun, and [`wasm-pack`](https://rustwasm.github.io/wasm-pack/).
+
+Benchmark names read `작업 · 입력` (what it does · what it runs on). Mean throughput in operations per second on an Apple silicon laptop (macOS arm64): read the numbers as orders of magnitude, not as precise scores.
+
+| Benchmark | core | node | wasm | es-hangul |
+| --- | ---: | ---: | ---: | ---: |
+| 글자 분해 + 초성 추출 · 이름 (3자) | 3.50M | 983.1K | 1.03M | 1.31M |
+| 글자 분해 + 초성 추출 · 문장 (42자) | 797.4K | 287.7K | 265.3K | 146.5K |
+| 글자 분해 + 초성 추출 · 문단 (176자, 4줄) | 228.8K | 67.4K | 66.3K | 28.3K |
+| 글자 분해 + 초성 추출 · 긴 문단 (407자, 9줄) | 98.1K | 37.6K | 30.1K | 13.3K |
+| 글자 분해 + 초성 추출 · 한영·숫자 혼합 (41자) | 1.93M | 374.6K | 555.8K | 296.0K |
+| 글자 분해 + 초성 추출 · 자모로 풀린 텍스트 (14자) | 1.59M | 683.3K | 624.6K | 689.6K |
+| 초성·중성·종성 분해 · 이름 (3자) | 5.28M | 644.7K | 628.1K | 2.38M |
+| 초성·중성·종성 분해 · 문장 (42자) | 648.6K | 79.7K | 70.6K | 590.8K |
+| 초성·중성·종성 분해 · 문단 (176자, 4줄) | 160.3K | 19.8K | 17.5K | 144.5K |
+| 받침 확인 · 이름 (3자) | 23.01M | 1.83M | 5.82M | 24.77M |
+| 받침 확인 · 문장 (42자) | 6.59M | 990.2K | 2.08M | 27.23M |
+| 조사 선택 (을/를) · 이름 (3자) | 15.39M | 1.75M | 2.31M | 9.53M |
+| 자모 조합 · 자모 입력 (5자) | 8.62M | 4.51M | 3.52M | 251.2K |
+| 초성 포함 확인 · 문장 (42자) | 4.38M | 1.10M | 1.60M | - |
+| 초성 포함 확인 · 문단 (176자, 4줄) | 1.64M | 549.1K | 597.1K | - |
+| 초성 위치 찾기 · 문장 (42자) | 4.39M | 855.8K | 1.33M | - |
+| 초성 위치 찾기 · 문단 (176자, 4줄) | 1.66M | 492.8K | 540.5K | - |
+
+<details>
+<summary>Benchmark → API</summary>
+
+| Benchmark | API |
+| --- | --- |
+| 글자 분해 + 초성 추출 | `disassemble` + `getChoseong` |
+| 초성·중성·종성 분해 | `disassembleToGroups` |
+| 받침 확인 | `hasBatchim` |
+| 조사 선택 (을/를) | `josa("을/를")` |
+| 자모 조합 | `assemble` |
+| 초성 포함 확인 | `containsChoseong("ㄷㅎ")` |
+| 초성 위치 찾기 | `findChoseong("ㄴㄹ")` |
+
+</details>
+
+- es-hangul wins on very short inputs because it never crosses the FFI boundary; the gap reverses as input grows.
+- The WebAssembly lane copies strings in and out of linear memory, so it trails the Node.js lane on long inputs even though both wrap the same Rust core.
+- es-hangul has no choseong search, so 초성 포함 확인 and 초성 위치 찾기 compare only the Rust lanes.
+- Each row times the whole call, including the wrapper the bindings create around the input.
+
+The `benchmark` GitHub Actions workflow runs the report on manual dispatch only and uploads `benchmark-report.json` as an artifact.
+
 ## For AI coding agents
 
 See [`llms.txt`](./llms.txt) for a short API overview.
