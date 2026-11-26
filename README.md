@@ -183,6 +183,47 @@ console.log(unitAt("가A", 1)); // { original: "A", isHangul: false, ... }
 console.log(assemble("ㄱㅏㅂㅅ")); // "값"
 ```
 
+## Benchmarks
+
+Both harnesses read the same inputs from [`benchmark/fixtures`](./benchmark/fixtures), so the Rust, Node.js, WebAssembly, and es-hangul numbers describe identical work.
+
+| Command | What it measures |
+| --- | --- |
+| `cargo bench -p rusty_hangul_benchmark` | Rust core, via [criterion](https://github.com/bheisler/criterion.rs) |
+| `bun run bench` | es-hangul, the Node.js binding, and the WebAssembly binding, via `vitest bench` |
+| `bun run bench:report` | both harnesses at once, merged into a single table |
+
+`bun run bench:report` builds `wasm/pkg` and the Node.js addon when they are missing, so a fresh checkout only needs Rust, bun, and [`wasm-pack`](https://rustwasm.github.io/wasm-pack/).
+
+Mean throughput in operations per second on an Apple silicon laptop (macOS arm64). Read the numbers as orders of magnitude, not as precise scores.
+
+| Benchmark | core | es-hangul | node | wasm |
+| --- | ---: | ---: | ---: | ---: |
+| disassemble + getChoseong · 한글 이름 분석 | 3.42M | 1.39M | 999.0K | 1.03M |
+| disassemble + getChoseong · 한글 문장 분석 | 798.6K | 149.7K | 282.5K | 260.5K |
+| disassemble + getChoseong · 한글 문단 분석 | 234.2K | 33.4K | 87.9K | 75.6K |
+| disassemble + getChoseong · 한글 긴 문단 분석 | 101.4K | 14.2K | 31.9K | 31.6K |
+| disassemble + getChoseong · 한영 혼합 텍스트 | 1.95M | 291.3K | 589.3K | 561.0K |
+| disassemble + getChoseong · 한글 NFD 텍스트 | 1.59M | 692.0K | 681.2K | 619.1K |
+| disassembleToGroups · 한글 이름 분석 | 5.23M | 6.04M | 624.3K | 627.8K |
+| disassembleToGroups · 한글 문장 분석 | 621.9K | 584.0K | 76.9K | 61.8K |
+| disassembleToGroups · 한글 문단 분석 | 151.2K | 138.6K | 18.7K | 16.3K |
+| hasBatchim · 한글 이름 분석 | 22.37M | 24.06M | 1.46M | 5.75M |
+| hasBatchim · 한글 문장 분석 | 6.05M | 24.62M | 1.09M | 1.84M |
+| josa · 한글 이름 분석 | 15.59M | 12.43M | 1.59M | 2.16M |
+| assemble · 자모 조합 텍스트 | 8.28M | 259.7K | 4.61M | 3.53M |
+| containsChoseong · 한글 문장 분석 | 3.77M | - | 1.16M | 1.56M |
+| containsChoseong · 한글 문단 분석 | 1.38M | - | 530.6K | 604.9K |
+| findChoseong · 한글 문장 분석 | 4.54M | - | 790.6K | 1.32M |
+| findChoseong · 한글 문단 분석 | 1.51M | - | 439.5K | 544.3K |
+
+- es-hangul wins on very short inputs because it never crosses the FFI boundary; the gap reverses as input grows.
+- The WebAssembly lane copies strings in and out of linear memory, so it trails the Node.js lane on long inputs even though both wrap the same Rust core.
+- es-hangul has no choseong search, so `containsChoseong` and `findChoseong` only compare the two Rust lanes.
+- Each row measures the whole scenario, including constructing `Hangul` in the bindings.
+
+The `benchmark` GitHub Actions workflow runs the report on pushes to `main` and uploads `benchmark-report.json` as an artifact.
+
 ## For AI coding agents
 
 See [`llms.txt`](./llms.txt) for a short API overview.

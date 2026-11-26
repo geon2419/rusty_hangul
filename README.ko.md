@@ -183,6 +183,47 @@ console.log(unitAt("가A", 1)); // { original: "A", isHangul: false, ... }
 console.log(assemble("ㄱㅏㅂㅅ")); // "값"
 ```
 
+## 벤치마크
+
+Rust, Node.js, WebAssembly, es-hangul 네 가지 구현이 [`benchmark/fixtures`](./benchmark/fixtures)의 동일한 입력을 사용하므로 같은 작업을 측정합니다.
+
+| 명령 | 측정 대상 |
+| --- | --- |
+| `cargo bench -p rusty_hangul_benchmark` | [criterion](https://github.com/bheisler/criterion.rs) 기반 Rust 코어 |
+| `bun run bench` | `vitest bench` 기반 es-hangul, Node.js 바인딩, WebAssembly 바인딩 |
+| `bun run bench:report` | 위 두 하네스를 한 번에 실행해 하나의 표로 출력 |
+
+`bun run bench:report`는 `wasm/pkg`와 Node.js 애드온이 없으면 먼저 빌드하므로, 새로 클론한 저장소에는 Rust, bun, [`wasm-pack`](https://rustwasm.github.io/wasm-pack/)만 있으면 됩니다.
+
+Apple silicon 노트북(macOS arm64)에서 측정한 초당 평균 처리량입니다. 정밀한 점수가 아니라 대략적인 규모로 읽어 주세요.
+
+| 벤치마크 | core | es-hangul | node | wasm |
+| --- | ---: | ---: | ---: | ---: |
+| disassemble + getChoseong · 한글 이름 분석 | 3.42M | 1.39M | 999.0K | 1.03M |
+| disassemble + getChoseong · 한글 문장 분석 | 798.6K | 149.7K | 282.5K | 260.5K |
+| disassemble + getChoseong · 한글 문단 분석 | 234.2K | 33.4K | 87.9K | 75.6K |
+| disassemble + getChoseong · 한글 긴 문단 분석 | 101.4K | 14.2K | 31.9K | 31.6K |
+| disassemble + getChoseong · 한영 혼합 텍스트 | 1.95M | 291.3K | 589.3K | 561.0K |
+| disassemble + getChoseong · 한글 NFD 텍스트 | 1.59M | 692.0K | 681.2K | 619.1K |
+| disassembleToGroups · 한글 이름 분석 | 5.23M | 6.04M | 624.3K | 627.8K |
+| disassembleToGroups · 한글 문장 분석 | 621.9K | 584.0K | 76.9K | 61.8K |
+| disassembleToGroups · 한글 문단 분석 | 151.2K | 138.6K | 18.7K | 16.3K |
+| hasBatchim · 한글 이름 분석 | 22.37M | 24.06M | 1.46M | 5.75M |
+| hasBatchim · 한글 문장 분석 | 6.05M | 24.62M | 1.09M | 1.84M |
+| josa · 한글 이름 분석 | 15.59M | 12.43M | 1.59M | 2.16M |
+| assemble · 자모 조합 텍스트 | 8.28M | 259.7K | 4.61M | 3.53M |
+| containsChoseong · 한글 문장 분석 | 3.77M | - | 1.16M | 1.56M |
+| containsChoseong · 한글 문단 분석 | 1.38M | - | 530.6K | 604.9K |
+| findChoseong · 한글 문장 분석 | 4.54M | - | 790.6K | 1.32M |
+| findChoseong · 한글 문단 분석 | 1.51M | - | 439.5K | 544.3K |
+
+- es-hangul은 FFI 경계를 넘지 않으므로 아주 짧은 입력에서 앞서고, 입력이 길어질수록 순위가 뒤집힙니다.
+- WebAssembly 레인은 선형 메모리로 문자열을 복사하므로 같은 Rust 코어를 감싸고도 긴 입력에서 Node.js 레인보다 느립니다.
+- es-hangul에는 초성 검색이 없어 `containsChoseong`, `findChoseong`은 Rust 레인 두 개만 비교합니다.
+- 각 행은 바인딩에서 `Hangul`을 생성하는 비용까지 포함한 시나리오 전체를 측정합니다.
+
+`benchmark` GitHub Actions 워크플로는 `main` 브랜치에 푸시될 때 리포트를 실행하고 `benchmark-report.json`을 아티팩트로 업로드합니다.
+
 ## AI 코딩 에이전트
 
 API 요약은 [`llms.txt`](./llms.txt)에 있습니다.
